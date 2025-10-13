@@ -4,6 +4,7 @@ import toast, { Toaster } from "react-hot-toast";
 
 function Profile() {
   const [user, setUser] = useState(null);
+  const [suspended, setSuspended] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,7 +18,19 @@ function Profile() {
         }
         return res.json();
       })
-      .then(data => setUser(data))
+      .then(data => {
+        setUser(data);
+        if (data && data.suspended) {
+          setSuspended(true);
+          toast.error("Your account is suspended. Logging out…");
+          // Auto-logout shortly after showing the message
+          setTimeout(() => {
+            try { localStorage.removeItem("token"); } catch {}
+            window.dispatchEvent(new Event("authChange"));
+            navigate("/login");
+          }, 1500);
+        }
+      })
       .catch((err) => {
         console.error("Failed to load profile:", err);
         toast.error("Failed to load profile");
@@ -36,6 +49,17 @@ function Profile() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8">
       <Toaster position="top-center" />
+      {suspended && (
+        <div className="max-w-5xl mx-auto mb-4 p-3 rounded border bg-yellow-50 border-yellow-300 text-yellow-800">
+          Your account is suspended. You are being logged out.
+          <button
+            onClick={() => { try { localStorage.removeItem("token"); } catch {}; window.dispatchEvent(new Event("authChange")); navigate("/login"); }}
+            className="ml-3 inline-block bg-yellow-600 text-white px-3 py-1 rounded"
+          >
+            Logout now
+          </button>
+        </div>
+      )}
       <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-5xl mx-auto">
         {/* User Info Header */}
         <h2 className="text-4xl font-bold text-gray-800">{user.name}</h2>

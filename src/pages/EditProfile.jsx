@@ -3,7 +3,15 @@ import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
 function EditProfile() {
-  const [form, setForm] = useState({ name: "", bio: "", age: "", gender: "other", interests: "", location: "", visible: false });
+  const [form, setForm] = useState({ 
+    name: "", 
+    bio: "", 
+    age: "", 
+    gender: "other", 
+    interests: "", 
+    location: "", 
+    visible: false // always start as false
+  });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -12,7 +20,9 @@ function EditProfile() {
     let mounted = true;
     const user = JSON.parse(localStorage.getItem("token"));
     if (!user || !user._id) return;
-    fetch(`https://backend-vauju-1.onrender.com/api/profile`, { headers: { 'x-user-id': user._id } })
+    fetch(`https://backend-vauju-1.onrender.com/api/profile`, { 
+      headers: { 'x-user-id': user._id } 
+    })
       .then(res => res.json())
       .then(data => {
         if (!mounted) return;
@@ -23,7 +33,7 @@ function EditProfile() {
           gender: data.gender || "other",
           interests: (data.interests && data.interests.join(", ")) || "",
           location: data.location || "",
-    visible: (typeof data.visible === 'boolean') ? data.visible : false,
+          visible: false // user must manually enable; admin approval required
         });
       })
       .catch(() => toast.error("Failed to load profile"));
@@ -67,14 +77,14 @@ function EditProfile() {
       try {
         const stored = JSON.parse(localStorage.getItem("token")) || {};
         localStorage.setItem("token", JSON.stringify({ ...stored, ...updated }));
-        // notify app to refresh dependent UI (e.g., navbar logo based on gender)
         window.dispatchEvent(new Event("authChange"));
-      } catch (err) {
-        // ignore localStorage errors
+      } catch (err) { }
+      if (form.visible) {
+        toast.success("Request sent. Admin approval required to appear in Matches.");
+      } else {
+        toast.success("Profile updated");
       }
-  toast.success("Profile updated");
-  // Navigate to matches so user can immediately see results
-  navigate("/matches");
+      navigate("/matches");
     } catch (err) {
       console.error("EditProfile error:", err);
       toast.error(err.message || "Failed to update profile");
@@ -129,7 +139,6 @@ function EditProfile() {
             />
           </button>
         </div>
-        {/* Profile photos removed - not supported */}
         <button type="submit" className="bg-red-500 text-white px-4 py-2 rounded" disabled={loading}>{loading ? "Saving..." : "Save"}</button>
       </form>
     </div>

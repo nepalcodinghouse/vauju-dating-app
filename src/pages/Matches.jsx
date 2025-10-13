@@ -6,6 +6,7 @@ function Matches() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [status, setStatus] = useState({ pendingApproval: false, suspended: false });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,9 +21,19 @@ function Matches() {
       setLoading(true);
       setError(null);
       try {
+        // Fetch my profile to determine visibility status and suspension
+        const profRes = await fetch(
+          `http://localhost:5000/api/profile`,
+          { headers: { "x-user-id": token._id } }
+        );
+        const me = profRes.ok ? await profRes.json() : {};
+        const pendingApproval = !!(me.visibilityRequested && !me.visibilityApproved);
+        const suspended = !!me.suspended;
+        setStatus({ pendingApproval, suspended });
+
         const res = await fetch(
           `https://backend-vauju-1.onrender.com/api/profile/matches`,
-          { headers: { 'x-user-id': token._id } }
+          { headers: { "x-user-id": token._id } }
         );
         if (!res.ok) throw new Error("Failed to fetch matches");
         const data = await res.json();
@@ -38,66 +49,100 @@ function Matches() {
     fetchMatches();
   }, []);
 
+  const token = JSON.parse(localStorage.getItem("token"));
+  const meId = token?._id;
+
+  // Skeleton card for loading
+  const SkeletonCard = () => (
+    <div className="flex border rounded-xl shadow-sm animate-pulse overflow-hidden">
+      <div className="w-1 bg-gray-300"></div>
+      <div className="flex-1 p-4 space-y-2">
+        <div className="h-5 bg-gray-300 rounded w-1/3"></div>
+        <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+      </div>
+    </div>
+  );
+
   if (loading)
-    return <div className="p-4 text-center text-gray-500">Loading matches...</div>;
+    return (
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        {Array(8).fill(0).map((_, idx) => <SkeletonCard key={idx} />)}
+      </div>
+    );
 
   if (error)
     return (
-      <div className="p-4 text-center text-red-500">
-        ⚠️ Error: {error}
+      <div className="p-8 text-center text-red-500 font-medium">
+        ⚠️ {error}
       </div>
     );
 
   if (matches.length === 0)
     return (
-      <div className="p-4 text-center text-gray-600">
+      <div className="p-8 text-center text-gray-600 font-medium">
         No matches available right now 😔
       </div>
     );
 
-  const token = JSON.parse(localStorage.getItem("token"));
-  const meId = token?._id;
-
   return (
-    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <div className="p-4">
+      {(status.pendingApproval || status.suspended) && (
+        <div className={`mb-4 p-3 rounded border ${status.suspended ? 'bg-yellow-50 border-yellow-300 text-yellow-800' : 'bg-blue-50 border-blue-300 text-blue-800'}`}>
+          {status.suspended
+            ? 'Your account is suspended. You will not appear in Matches.'
+            : 'Your visibility is pending admin approval. You will appear in Matches once approved.'}
+        </div>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
       {matches.map((u) => {
         const isMe = String(u._id) === String(meId);
         return (
           <div
             key={u._id}
-            className={`border rounded-lg p-4 bg-white shadow hover:shadow-md transition ${isMe ? "ring-2 ring-indigo-300" : ""}`}
+            className="flex border rounded-xl shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5 overflow-hidden bg-white"
           >
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">{u.name}</h3>
-              <div className="flex items-center gap-2">
-                {isMe && (
-                  <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">It's you</span>
-                )}
-                {!isMe && (
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition"
-                    aria-label={`Message ${u.name}`}
-                    title={`Message ${u.name}`}
-                    onClick={() => navigate(`/messages/${u._id}`)}
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span className="sr-only">Message</span>
-                  </button>
+            {/* Vertical accent line */}
+            <div
+              className={`w-1 ${isMe ? "bg-indigo-500" : "bg-red-500"} transition-all`}
+            ></div>
+
+            {/* Content */}
+            <div className="flex-1 p-4 flex flex-col justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900 text-lg">{u.name}</h3>
+                  {isMe && (
+                    <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">
+                      It's you
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500">
+                  {u.age ? `${u.age} years old` : "Age not available"}
+                </p>
+                {u.interests?.length > 0 && (
+                  <p className="text-sm text-gray-700">
+                    Interests: {u.interests.join(", ")}
+                  </p>
                 )}
               </div>
+
+              {!isMe && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/messages/${u._id}`)}
+                  className="mt-3 self-start flex items-center gap-2 bg-black hover:bg-gray-800 text-white text-sm px-4 py-1.5 rounded-full font-medium transition"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Message
+                </button>
+              )}
             </div>
-            <p className="text-sm text-gray-600">
-              {u.age ? `${u.age} years old` : "Age not available"}
-            </p>
-            {u.interests?.length > 0 && (
-              <p className="text-sm mt-2 text-gray-700">
-                Interests: {u.interests.join(", ")}
-              </p>
-            )}
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

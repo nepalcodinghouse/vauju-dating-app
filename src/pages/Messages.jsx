@@ -20,7 +20,7 @@ function Messages() {
       try {
         const token = JSON.parse(localStorage.getItem('token')) || {};
         if (!token._id) throw new Error('Not authenticated');
-        const res = await fetch("https://backend-vauju-1.onrender.com/api/profile/matches", {
+        const res = await fetch("http://localhost:5000/api/profile/matches", {
           headers: { 'x-user-id': token._id }
         });
         if (!res.ok) throw new Error(`Failed to fetch users (${res.status})`);
@@ -30,7 +30,7 @@ function Messages() {
         // fetch initial online user ids
         let onlineIds = [];
         try {
-          const onlineRes = await fetch('https://backend-vauju-1.onrender.com/api/messages/online-users', { headers: { 'x-user-id': token._id } });
+          const onlineRes = await fetch('http://localhost:5000/api/messages/online-users', { headers: { 'x-user-id': token._id } });
           if (onlineRes.ok) onlineIds = await onlineRes.json();
         } catch (e) {}
         const onlineSet = new Set((onlineIds || []).map(String));
@@ -59,7 +59,7 @@ function Messages() {
     const doBeat = async () => {
       try {
         const me = getMeId();
-        await fetch('https://backend-vauju-1.onrender.com/api/messages/heartbeat', { method: 'POST', headers: { 'x-user-id': me } });
+        await fetch('http://localhost:5000/api/messages/heartbeat', { method: 'POST', headers: { 'x-user-id': me } });
       } catch (err) {
         // ignore
       }
@@ -73,7 +73,7 @@ function Messages() {
   useEffect(() => {
     const me = getMeId();
     if (!me) return;
-    const socket = ioClient("https://backend-vauju-1.onrender.com", { transports: ["websocket", "polling"], autoConnect: true });
+    const socket = ioClient("http://localhost:5000", { transports: ["websocket"], autoConnect: true });
     socketRef.current = socket;
     const identify = () => {
       try { socket.emit("identify", me); } catch (e) {}
@@ -88,7 +88,7 @@ function Messages() {
         setMessages(prev => [...prev, m]);
         // if message is from other user, mark seen
         if (String(m.from) === String(selectedUser._id)) {
-          fetch(`https://backend-vauju-1.onrender.com/api/messages/seen/${m._id}`, { method: 'PUT', headers: { 'x-user-id': getMeId() } });
+          fetch(`http://localhost:5000/api/messages/seen/${m._id}`, { method: 'PUT', headers: { 'x-user-id': getMeId() } });
         }
       }
       // update users list online flag if present
@@ -152,16 +152,14 @@ function Messages() {
   const fetchConversation = async (userId) => {
     try {
       const me = getMeId();
-      const res = await fetch(`https://backend-vauju-1.onrender.com/api/messages/conversation/${userId}`, {
+      const res = await fetch(`http://localhost:5000/api/messages/conversation/${userId}`, {
         headers: { 'x-user-id': me }
       });
       if (!res.ok) throw new Error('Failed to load conversation');
       const data = await res.json();
       setMessages(data);
-      // scroll to bottom
-      setTimeout(() => {
-        convoRef.current?.scrollTo({ top: convoRef.current.scrollHeight, behavior: 'smooth' });
-      }, 50);
+      // scroll to bottom immediately
+      try { convoRef.current?.scrollTo({ top: convoRef.current.scrollHeight, behavior: 'auto' }); } catch (e) {}
     } catch (err) {
       console.error('Conversation load error', err);
       toast.error('Failed to load conversation');
@@ -172,7 +170,7 @@ function Messages() {
     if (!text.trim() || !selectedUser) return;
     try {
       const me = getMeId();
-      const res = await fetch('https://backend-vauju-1.onrender.com/api/messages/send', {
+      const res = await fetch('http://localhost:5000/api/messages/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': me },
         body: JSON.stringify({ to: selectedUser._id, text: text.trim() })
@@ -181,8 +179,8 @@ function Messages() {
       const m = await res.json();
       setMessages(prev => [...prev, m]);
       setText('');
-      // scroll
-      setTimeout(() => convoRef.current?.scrollTo({ top: convoRef.current.scrollHeight, behavior: 'smooth' }), 50);
+      // scroll immediately
+      try { convoRef.current?.scrollTo({ top: convoRef.current.scrollHeight, behavior: 'auto' }); } catch (e) {}
     } catch (err) {
       console.error('Send error', err);
       toast.error('Failed to send message');
@@ -193,12 +191,12 @@ function Messages() {
     try {
       const me = getMeId();
       // fetch conversation then call seen for messages from userId
-      const res = await fetch(`https://backend-vauju-1.onrender.com/api/messages/conversation/${userId}`, { headers: { 'x-user-id': me } });
+      const res = await fetch(`http://localhost:5000/api/messages/conversation/${userId}`, { headers: { 'x-user-id': me } });
       if (!res.ok) return;
       const msgs = await res.json();
       const unseen = msgs.filter(m => String(m.from) === String(userId) && !m.seen);
       for (const m of unseen) {
-        await fetch(`https://backend-vauju-1.onrender.com/api/messages/seen/${m._id}`, { method: 'PUT', headers: { 'x-user-id': me } });
+        await fetch(`http://localhost:5000/api/messages/seen/${m._id}`, { method: 'PUT', headers: { 'x-user-id': me } });
       }
       // refresh conversation to reflect seen flags
       await fetchConversation(userId);
@@ -208,104 +206,177 @@ function Messages() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Toaster position="top-right" />
+   <div className="flex h-screen bg-white">
+  <Toaster position="top-right" />
 
-      {/* Left Section - Users List */}
-            <aside className={`w-1/3 border-r border-gray-300 bg-white shadow-md overflow-y-auto ${selectedUser ? 'hidden sm:block' : ''}`}>
-        <h2 className="text-2xl font-semibold text-center py-4 border-b bg-gray-100">
-          Chats
-        </h2>
+  {/* Left Section - Users List */}
+  <aside className={`w-full sm:w-80 border-r border-gray-200 bg-white overflow-y-auto transition-all duration-300 ${selectedUser ? 'hidden sm:block' : ''}`}>
+    <h2 className="text-xl font-semibold text-center py-3 border-b bg-gray-50">
+      Chats
+    </h2>
 
-          {users.length > 0 ? (
-          users.map((user) => (
-            <div
-              key={user._id}
-              onClick={() => handleSelectUser(user)}
-              className={`flex items-center p-4 cursor-pointer hover:bg-gray-100 ${
-                selectedUser?._id === user._id ? "bg-gray-200" : ""
-              }`}
-            >
-              <UserCircle2 className="w-10 h-10 text-gray-500" />
-              <div className="ml-3">
-                <h3 className="text-lg font-medium">{user.name}</h3>
-                <p className="text-sm text-gray-500">{user.email}</p>
-              </div>
-              <div className="ml-auto flex items-center">
-                <Circle
-                  className={`w-3 h-3 ${
-                    user.isOnline ? "text-green-500" : "text-gray-400"
-                  }`}
-                />
-              </div>
+    {users.length > 0 ? (
+      users.map((user) => (
+        <div
+          key={user._id}
+          onClick={() => handleSelectUser(user)}
+          className={`flex items-center p-3 cursor-pointer hover:bg-gray-50 transition-colors rounded-lg mx-2 my-1 ${
+            selectedUser?._id === user._id ? "bg-gray-100" : ""
+          }`}
+        >
+          <UserCircle2 className="w-9 h-9 text-gray-400" />
+          <div className="ml-3 flex-1 overflow-hidden">
+            <h3 className="text-[15px] font-medium truncate text-gray-900">{user.name}</h3>
+            <p className="text-[12px] text-gray-500 truncate">{user.email}</p>
+          </div>
+          <Circle
+            className={`w-2.5 h-2.5 ml-2 ${user.isOnline ? "text-green-500" : "text-gray-300"}`}
+          />
+        </div>
+      ))
+    ) : (
+      <p className="text-center text-gray-500 py-6">
+        No users found 😕
+      </p>
+    )}
+  </aside>
+
+  {/* Right Section - Chat Window */}
+  <main className={`flex-1 flex flex-col bg-white transition-all duration-300 ${selectedUser ? 'w-full sm:w-[calc(100%-20rem)]' : ''}`}>
+    {selectedUser ? (
+      <>
+        <header className="flex items-center justify-between p-3 border-b bg-white/90 backdrop-blur sticky top-0 z-10">
+          <div className="flex items-center">
+            <button onClick={() => { setSelectedUser(null); navigate('/messages'); }} className="mr-2 sm:hidden text-gray-600 font-medium hover:text-gray-800">Back</button>
+            <UserCircle2 className="w-8 h-8 text-gray-400" />
+            <div className="ml-3">
+              <h2 className="text-[15px] font-semibold text-gray-900">{selectedUser.name}</h2>
+              <span className={`text-[12px] ${selectedUser.isOnline ? 'text-green-600' : 'text-gray-500'}`}>
+                {selectedUser.isOnline ? "Online" : "Offline"}
+              </span>
             </div>
-          ))
-        ) : (
-          <p className="text-center text-gray-500 py-6">
-            No users found 😕
-          </p>
-        )}
-      </aside>
+          </div>
+          <button onClick={() => navigate('/')} className="text-[12px] px-3 py-1 rounded-full bg-gray-900 text-white hover:bg-black">Home</button>
+        </header>
 
-      {/* Right Section - Chat Window */}
-            <main className={`flex-1 flex flex-col bg-white ${selectedUser ? 'w-full' : ''}`}>
-        {selectedUser ? (
-          <>
-            <header className="flex items-center justify-between p-4 border-b bg-gray-100">
-              <div className="flex items-center">
-                {/* mobile back */}
-                <button onClick={() => { setSelectedUser(null); navigate('/messages'); }} className="mr-2 sm:hidden text-gray-600">Back</button>
-                <UserCircle2 className="w-8 h-8 text-gray-500" />
-                <div className="ml-3">
-                  <h2 className="text-lg font-semibold">{selectedUser.name}</h2>
-                  <span className="text-sm text-gray-500">
-                    {selectedUser.isOnline ? "Online" : "Offline"}
-                  </span>
-                </div>
-              </div>
-            </header>
-
-            <div ref={convoRef} className="flex-1 p-4 overflow-y-auto">
-              {messages.length === 0 ? (
-                <p className="text-gray-500 text-center mt-10">Start chatting with {selectedUser.name} 💬</p>
-              ) : (
-                messages.map((m) => {
-                  const isMine = String(m.from) === String(getMeId());
-                  return (
-                    <div key={m._id} className={`my-2 max-w-xl ${isMine ? 'ml-auto text-right' : ''}`}>
-                      <div className={`inline-block px-3 py-2 rounded-2xl ${isMine ? 'bg-blue-500 text-white rounded-tr-md' : 'bg-gray-100 text-gray-800 rounded-tl-md'}`}>
-                        {m.text}
-                      </div>
-                      <div className={`text-[10px] text-gray-400 mt-1 ${isMine ? '' : 'text-left'}`}>
-                        {formatTimestamp(m.createdAt)}{isMine ? (m.seen ? ' · Seen' : ' · Sent') : ''}
+        <div ref={convoRef} className="flex-1 p-3 overflow-y-auto bg-white">
+          {messages.length === 0 ? (
+            <p className="text-gray-500 text-center mt-10">Start chatting with {selectedUser.name} 💬</p>
+          ) : (
+            // Insert date separators for uniqueness and readability
+            messages.map((m, idx) => {
+              const meId = String(getMeId());
+              const isMine = String(m.from) === meId;
+              const prev = messages[idx - 1];
+              const next = messages[idx + 1];
+              const sameAsPrev = prev && String(prev.from) === String(m.from);
+              const sameAsNext = next && String(next.from) === String(m.from);
+              const isStartOfGroup = !sameAsPrev;
+              const isEndOfGroup = !sameAsNext;
+              const showDateDivider = (() => {
+                if (!prev) return true;
+                const d1 = new Date(prev.createdAt).toDateString();
+                const d2 = new Date(m.createdAt).toDateString();
+                return d1 !== d2;
+              })();
+              return (
+                <div key={m._id} className={`my-1 max-w-2xl ${isMine ? 'ml-auto' : 'mr-auto'}`}>
+                  {showDateDivider && (
+                    <div className="flex items-center justify-center my-2">
+                      <div className="text-[11px] text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                        {new Date(m.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
                       </div>
                     </div>
-                  );
-                })
-              )}
-            </div>
+                  )}
+                  <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} gap-1`}>
+                    {isStartOfGroup && (
+                      <div className={`text-[11px] mb-0.5 ${isMine ? 'text-gray-500' : 'text-gray-500'}`}>
+                        {isMine ? 'You' : selectedUser?.name}
+                      </div>
+                    )}
+                    <div className={`group relative inline-block px-4 py-2 rounded-2xl whitespace-pre-wrap break-words leading-relaxed max-w-[80%] border 
+                      ${isMine ? 'bg-white text-gray-900 border-blue-200 shadow-sm' : 'bg-white text-gray-900 border-gray-200 shadow-sm'}`}>
+                      {m.isUnsent ? (
+                        <span className={`italic ${isMine ? 'text-gray-400' : 'text-gray-500'}`}>{isMine ? 'You unsent a message' : 'Message unsent'}</span>
+                      ) : (
+                        m.text
+                      )}
+                      {isMine && !m.isUnsent && (
+                        <div className="absolute -top-2 right-0 hidden group-hover:flex items-center gap-1">
+                          <button
+                            onClick={async () => {
+                              try {
+                                const me = getMeId();
+                                const res = await fetch(`https://backend-vauju-1.onrender.com/api/messages/unsend/${m._id}`, { method: 'POST', headers: { 'x-user-id': me } });
+                                if (res.ok) {
+                                  const updated = await res.json();
+                                  setMessages(prev => prev.map(x => x._id === m._id ? updated : x));
+                                }
+                              } catch {}
+                            }}
+                            className="text-[10px] px-2 py-0.5 bg-gray-800 text-white rounded-full"
+                          >
+                            Unsend
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const me = getMeId();
+                                const res = await fetch(`http://localhost:5000/api/messages/delete-for-me/${m._id}`, { method: 'DELETE', headers: { 'x-user-id': me } });
+                                if (res.ok) {
+                                  setMessages(prev => prev.filter(x => x._id !== m._id));
+                                }
+                              } catch {}
+                            }}
+                            className="text-[10px] px-2 py-0.5 bg-gray-800 text-white rounded-full"
+                          >
+                            Delete for me
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {isEndOfGroup && (
+                      <div className={`text-[11px] text-gray-500 block ${isMine ? 'text-right' : 'text-left'}`}>
+                        {formatTimestamp(m.createdAt)}{isMine ? (m.seen ? ' · Seen' : ' · Sent') : ''}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
 
-            <footer className="p-4 border-t bg-gray-100 flex items-center">
-              <input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                type="text"
-                placeholder="Type a message..."
-                className="flex-1 border rounded-lg p-2 focus:outline-none focus:ring focus:ring-blue-400"
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
-              />
-              <button onClick={handleSend} className="ml-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-                <MessageSquare className="w-5 h-5 mr-1" /> Send
-              </button>
-            </footer>
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            Select a user to start chatting 💬
-          </div>
-        )}
-      </main>
-    </div>
+        <footer className="p-3 border-t bg-white flex items-center gap-2 sticky bottom-0">
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            type="text"
+            placeholder="Type a message..."
+            className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-300 transition text-[14px]"
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
+          />
+          <button onClick={handleSend} className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-full flex items-center gap-1 transition text-[14px]">
+            <MessageSquare className="w-5 h-5" /> Send
+          </button>
+        </footer>
+      </>
+    ) : (
+      <div className="flex items-center justify-center h-full text-gray-400 text-center px-4">
+        Select a user to start chatting 💬
+      </div>
+    )}
+  </main>
+
+  {/* Floating Home Button for mobile */}
+  <button
+    onClick={() => navigate('/')}
+    className="fixed bottom-4 left-4 sm:hidden bg-gray-900 text-white text-[12px] px-3 py-2 rounded-full shadow-lg"
+  >
+    Home
+  </button>
+</div>
+
   );
 }
 
