@@ -20,7 +20,7 @@ function Messages() {
       try {
         const token = JSON.parse(localStorage.getItem('token')) || {};
         if (!token._id) throw new Error('Not authenticated');
-        const res = await fetch("http://localhost:5000/api/profile/matches", {
+        const res = await fetch("/api/profile/matches", {
           headers: { 'x-user-id': token._id }
         });
         if (!res.ok) throw new Error(`Failed to fetch users (${res.status})`);
@@ -30,7 +30,7 @@ function Messages() {
         // fetch initial online user ids
         let onlineIds = [];
         try {
-          const onlineRes = await fetch('http://localhost:5000/api/messages/online-users', { headers: { 'x-user-id': token._id } });
+          const onlineRes = await fetch('/api/messages/online-users', { headers: { 'x-user-id': token._id } });
           if (onlineRes.ok) onlineIds = await onlineRes.json();
         } catch (e) {}
         const onlineSet = new Set((onlineIds || []).map(String));
@@ -59,7 +59,7 @@ function Messages() {
     const doBeat = async () => {
       try {
         const me = getMeId();
-        await fetch('http://localhost:5000/api/messages/heartbeat', { method: 'POST', headers: { 'x-user-id': me } });
+        await fetch('/api/messages/heartbeat', { method: 'POST', headers: { 'x-user-id': me } });
       } catch (err) {
         // ignore
       }
@@ -73,7 +73,7 @@ function Messages() {
   useEffect(() => {
     const me = getMeId();
     if (!me) return;
-    const socket = ioClient("http://localhost:5000", { transports: ["websocket"], autoConnect: true });
+    const socket = ioClient("https://backend-vauju-1.onrender.com", { transports: ["websocket"], autoConnect: true });
     socketRef.current = socket;
     const identify = () => {
       try { socket.emit("identify", me); } catch (e) {}
@@ -88,7 +88,7 @@ function Messages() {
         setMessages(prev => [...prev, m]);
         // if message is from other user, mark seen
         if (String(m.from) === String(selectedUser._id)) {
-          fetch(`http://localhost:5000/api/messages/seen/${m._id}`, { method: 'PUT', headers: { 'x-user-id': getMeId() } });
+          fetch(`/api/messages/seen/${m._id}`, { method: 'PUT', headers: { 'x-user-id': getMeId() } });
         }
       }
       // update users list online flag if present
@@ -152,7 +152,7 @@ function Messages() {
   const fetchConversation = async (userId) => {
     try {
       const me = getMeId();
-      const res = await fetch(`http://localhost:5000/api/messages/conversation/${userId}`, {
+      const res = await fetch(`/api/messages/conversation/${userId}`, {
         headers: { 'x-user-id': me }
       });
       if (!res.ok) throw new Error('Failed to load conversation');
@@ -170,7 +170,7 @@ function Messages() {
     if (!text.trim() || !selectedUser) return;
     try {
       const me = getMeId();
-      const res = await fetch('http://localhost:5000/api/messages/send', {
+      const res = await fetch('/api/messages/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': me },
         body: JSON.stringify({ to: selectedUser._id, text: text.trim() })
@@ -191,12 +191,12 @@ function Messages() {
     try {
       const me = getMeId();
       // fetch conversation then call seen for messages from userId
-      const res = await fetch(`http://localhost:5000/api/messages/conversation/${userId}`, { headers: { 'x-user-id': me } });
+      const res = await fetch(`/api/messages/conversation/${userId}`, { headers: { 'x-user-id': me } });
       if (!res.ok) return;
       const msgs = await res.json();
       const unseen = msgs.filter(m => String(m.from) === String(userId) && !m.seen);
       for (const m of unseen) {
-        await fetch(`http://localhost:5000/api/messages/seen/${m._id}`, { method: 'PUT', headers: { 'x-user-id': me } });
+        await fetch(`/api/messages/seen/${m._id}`, { method: 'PUT', headers: { 'x-user-id': me } });
       }
       // refresh conversation to reflect seen flags
       await fetchConversation(userId);
@@ -307,7 +307,7 @@ function Messages() {
                             onClick={async () => {
                               try {
                                 const me = getMeId();
-                                const res = await fetch(`https://backend-vauju-1.onrender.com/api/messages/unsend/${m._id}`, { method: 'POST', headers: { 'x-user-id': me } });
+                                const res = await fetch(`/api/messages/unsend/${m._id}`, { method: 'POST', headers: { 'x-user-id': me } });
                                 if (res.ok) {
                                   const updated = await res.json();
                                   setMessages(prev => prev.map(x => x._id === m._id ? updated : x));
@@ -322,7 +322,7 @@ function Messages() {
                             onClick={async () => {
                               try {
                                 const me = getMeId();
-                                const res = await fetch(`http://localhost:5000/api/messages/delete-for-me/${m._id}`, { method: 'DELETE', headers: { 'x-user-id': me } });
+                                const res = await fetch(`/api/messages/delete-for-me/${m._id}`, { method: 'DELETE', headers: { 'x-user-id': me } });
                                 if (res.ok) {
                                   setMessages(prev => prev.filter(x => x._id !== m._id));
                                 }
