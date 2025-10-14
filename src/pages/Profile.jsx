@@ -4,23 +4,37 @@ import toast, { Toaster } from "react-hot-toast";
 import { LogOut, Edit2, CheckCircle } from "lucide-react";
 
 function Profile() {
-  const { username } = useParams(); // get dynamic username
+  const { username } = useParams(); // dynamic username
   const [user, setUser] = useState(null);
   const [suspended, setSuspended] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    let url = "/api/profile"; // default to logged-in user
     const token = JSON.parse(localStorage.getItem("token"));
+    let url;
 
     if (username) {
-      url = `/api/users/${username}`; // fetch by username
-    } else if (!token || !token._id) {
-      return navigate("/login");
+      // Viewing another user's profile
+      url =
+        process.env.NODE_ENV === "production"
+          ? `https://backend-vauju-1.onrender.com/api/users/${username}`
+          : `/api/users/${username}`;
+    } else {
+      // Viewing own profile
+      if (!token || !token._id) return navigate("/login");
+      url =
+        process.env.NODE_ENV === "production"
+          ? `https://backend-vauju-1.onrender.com/api/profile`
+          : `/api/profile`;
     }
 
     fetch(url, { headers: token ? { "x-user-id": token._id } : {} })
       .then(async (res) => {
+        if (res.status === 404) {
+          setNotFound(true);
+          return null;
+        }
         if (!res.ok) {
           const txt = await res.text().catch(() => "");
           throw new Error(`Failed to load profile: ${res.status} ${txt}`);
@@ -28,8 +42,10 @@ function Profile() {
         return res.json();
       })
       .then((data) => {
+        if (!data) return;
         setUser(data);
 
+        // Handle suspended account for own profile
         if (!username && data?.suspended) {
           setSuspended(true);
           toast.error("Your account is suspended. Logging out…");
@@ -45,6 +61,14 @@ function Profile() {
         toast.error("Failed to load profile");
       });
   }, [username, navigate]);
+
+  if (notFound) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <div className="text-gray-500 text-lg">Profile not found.</div>
+      </div>
+    );
+  }
 
   if (!user)
     return (
@@ -62,7 +86,7 @@ function Profile() {
         </div>
       )}
 
-      <div className="bg-white p-8 w-full max-w-5xl mx-auto">
+      <div className="bg-white p-8 w-full max-w-5xl mx-auto rounded-2xl shadow-md">
         <h2 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
           {user.name}
           {user.isBlueTick && <CheckCircle size={20} className="text-blue-500" />}
@@ -79,7 +103,7 @@ function Profile() {
           )}
         </div>
 
-        {/* Edit / Logout buttons only if viewing own profile */}
+        {/* Edit / Logout buttons only for own profile */}
         {!username && (
           <div className="flex gap-3 justify-end mt-6">
             <button
