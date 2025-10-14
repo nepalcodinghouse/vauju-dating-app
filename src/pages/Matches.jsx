@@ -2,6 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MessageSquare } from "lucide-react";
 
+// Set backend base URL
+const BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://backend-vauju-1.onrender.com"
+    : "";
+
 function Matches() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,19 +28,19 @@ function Matches() {
       setError(null);
       try {
         // Fetch my profile to determine visibility status and suspension
-        const profRes = await fetch(
-          `/api/profile`,
-          { headers: { "x-user-id": token._id } }
-        );
-        const me = profRes.ok ? await profRes.json() : {};
+        const profRes = await fetch(`${BASE_URL}/api/profile`, {
+          headers: { "x-user-id": token._id },
+        });
+        if (!profRes.ok) throw new Error("Failed to fetch your profile");
+        const me = await profRes.json();
         const pendingApproval = !!(me.visibilityRequested && !me.visibilityApproved);
         const suspended = !!me.suspended;
         setStatus({ pendingApproval, suspended });
 
-        const res = await fetch(
-          `/api/profile/matches`,
-          { headers: { "x-user-id": token._id } }
-        );
+        // Fetch matches
+        const res = await fetch(`${BASE_URL}/api/profile/matches`, {
+          headers: { "x-user-id": token._id },
+        });
         if (!res.ok) throw new Error("Failed to fetch matches");
         const data = await res.json();
         setMatches(data);
@@ -47,7 +53,7 @@ function Matches() {
     };
 
     fetchMatches();
-  }, []);
+  }, [navigate]);
 
   const token = JSON.parse(localStorage.getItem("token"));
   const meId = token?._id;
@@ -88,60 +94,66 @@ function Matches() {
   return (
     <div className="p-4">
       {(status.pendingApproval || status.suspended) && (
-        <div className={`mb-4 p-3 rounded border ${status.suspended ? 'bg-yellow-50 border-yellow-300 text-yellow-800' : 'bg-blue-50 border-blue-300 text-blue-800'}`}>
+        <div
+          className={`mb-4 p-3 rounded border ${
+            status.suspended
+              ? 'bg-yellow-50 border-yellow-300 text-yellow-800'
+              : 'bg-blue-50 border-blue-300 text-blue-800'
+          }`}
+        >
           {status.suspended
             ? 'Your account is suspended. You will not appear in Matches.'
             : 'Your visibility is pending admin approval. You will appear in Matches once approved.'}
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-      {matches.map((u) => {
-        const isMe = String(u._id) === String(meId);
-        return (
-          <div
-            key={u._id}
-            className="flex border rounded-xl shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5 overflow-hidden bg-white"
-          >
-            {/* Vertical accent line */}
+        {matches.map((u) => {
+          const isMe = String(u._id) === String(meId);
+          return (
             <div
-              className={`w-1 ${isMe ? "bg-indigo-500" : "bg-red-500"} transition-all`}
-            ></div>
+              key={u._id}
+              className="flex border rounded-xl shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5 overflow-hidden bg-white"
+            >
+              {/* Vertical accent line */}
+              <div
+                className={`w-1 ${isMe ? "bg-indigo-500" : "bg-red-500"} transition-all`}
+              ></div>
 
-            {/* Content */}
-            <div className="flex-1 p-4 flex flex-col justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 text-lg">{u.name}</h3>
-                  {isMe && (
-                    <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">
-                      It's you
-                    </span>
+              {/* Content */}
+              <div className="flex-1 p-4 flex flex-col justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-900 text-lg">{u.name}</h3>
+                    {isMe && (
+                      <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">
+                        It's you
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {u.age ? `${u.age} years old` : "Age not available"}
+                  </p>
+                  {u.interests?.length > 0 && (
+                    <p className="text-sm text-gray-700">
+                      Interests: {u.interests.join(", ")}
+                    </p>
                   )}
                 </div>
-                <p className="text-sm text-gray-500">
-                  {u.age ? `${u.age} years old` : "Age not available"}
-                </p>
-                {u.interests?.length > 0 && (
-                  <p className="text-sm text-gray-700">
-                    Interests: {u.interests.join(", ")}
-                  </p>
+
+                {!isMe && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/messages/${u._id}`)}
+                    className="mt-3 self-start flex items-center gap-2 bg-black hover:bg-gray-800 text-white text-sm px-4 py-1.5 rounded-full font-medium transition"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Message
+                  </button>
                 )}
               </div>
-
-              {!isMe && (
-                <button
-                  type="button"
-                  onClick={() => navigate(`/messages/${u._id}`)}
-                  className="mt-3 self-start flex items-center gap-2 bg-black hover:bg-gray-800 text-white text-sm px-4 py-1.5 rounded-full font-medium transition"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Message
-                </button>
-              )}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
       </div>
     </div>
   );
