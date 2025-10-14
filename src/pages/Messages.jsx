@@ -104,7 +104,7 @@ function Messages() {
   useEffect(() => {
     const me = getMeId();
     if (!me) return;
-    const socket = ioClient("http://localhost:5000", {
+    const socket = ioClient("https://backend-vauju-1.onrender.com", {
       transports: ["websocket"],
       autoConnect: true,
     });
