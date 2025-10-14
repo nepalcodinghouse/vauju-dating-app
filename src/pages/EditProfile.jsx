@@ -2,6 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
+// Backend base URL
+const BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://backend-vauju-1.onrender.com"
+    : "";
+
 function EditProfile() {
   const [form, setForm] = useState({
     name: "",
@@ -20,20 +26,22 @@ function EditProfile() {
     const user = JSON.parse(localStorage.getItem("token"));
     if (!user || !user._id) return navigate("/login");
 
-    fetch("/api/profile", { headers: { "x-user-id": user._id } })
+    fetch(`${BASE_URL}/api/profile`, { headers: { "x-user-id": user._id } })
       .then(res => res.json())
-      .then(data => setForm({
-        name: data.name || "",
-        username: data.username || "",
-        bio: data.bio || "",
-        age: data.age || "",
-        gender: data.gender || "other",
-        interests: (data.interests && data.interests.join(", ")) || "",
-        location: data.location || "",
-        visible: data.visible || false
-      }))
+      .then(data =>
+        setForm({
+          name: data.name || "",
+          username: data.username || "",
+          bio: data.bio || "",
+          age: data.age || "",
+          gender: data.gender || "other",
+          interests: (data.interests && data.interests.join(", ")) || "",
+          location: data.location || "",
+          visible: data.visible || false,
+        })
+      )
       .catch(() => toast.error("Failed to load profile"));
-  }, []);
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -45,15 +53,16 @@ function EditProfile() {
     if (!/^[a-z0-9._]+$/.test(form.username)) {
       return toast.error("Username can only contain letters, numbers, dots, underscores");
     }
+
     setLoading(true);
     const user = JSON.parse(localStorage.getItem("token"));
     if (!user || !user._id) return;
 
     try {
-      const res = await fetch("/api/profile", {
+      const res = await fetch(`${BASE_URL}/api/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "x-user-id": user._id },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || "Update failed");
@@ -61,7 +70,10 @@ function EditProfile() {
       localStorage.setItem("token", JSON.stringify({ ...user, ...result }));
       window.dispatchEvent(new Event("authChange"));
 
-      toast.success(form.visible ? "Request sent. Admin approval required to appear in Matches." : "Profile updated successfully!");
+      toast.success(form.visible
+        ? "Request sent. Admin approval required to appear in Matches."
+        : "Profile updated successfully!"
+      );
       navigate(`/@${form.username}`);
     } catch (err) {
       toast.error(err.message || "Failed to update profile");
