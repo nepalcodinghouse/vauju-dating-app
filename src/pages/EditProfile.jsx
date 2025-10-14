@@ -44,7 +44,7 @@ function EditProfile() {
 
   // Handle input changes
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { username ,name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
   };
 
@@ -94,6 +94,17 @@ function EditProfile() {
           Edit Profile
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
+        {/* uSERNAME */}
+        <div>
+            <label className="block font-medium text-gray-700 mb-1">Username</label>
+            <input
+              name="username"
+              value={form.username}
+              onChange={handleChange}
+              className="w-full border rounded-xl px-4 py-2"
+              required
+            />
+        </div>
           {/* Name */}
           <div>
             <label className="block font-medium text-gray-700 mb-1">Name</label>
