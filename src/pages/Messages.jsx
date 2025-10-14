@@ -4,6 +4,8 @@ import { io as ioClient } from "socket.io-client";
 import { UserCircle2, MessageSquare, Circle } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
+const API_URL = "https://backend-vauju-1.onrender.com";
+
 function Messages() {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -13,6 +15,7 @@ function Messages() {
   const [text, setText] = useState("");
   const convoRef = useRef(null);
   const socketRef = useRef(null);
+  const presenceTimeoutRef = useRef({}); // Track presence timeouts
 
   // 🔔 Request Notification Permission Once
   useEffect(() => {
@@ -36,7 +39,7 @@ function Messages() {
           return;
         }
 
-        const res = await fetch("/api/profile/messages-users", {
+        const res = await fetch(`${API_URL}/api/profile/messages-users`, {
           headers: { "x-user-id": token._id },
           timeout: 10000,
         });
@@ -61,7 +64,7 @@ function Messages() {
 
         let onlineIds = [];
         try {
-          const onlineRes = await fetch("/api/messages/online-users", {
+          const onlineRes = await fetch(`${API_URL}/api/messages/online-users`, {
             headers: { "x-user-id": token._id },
             timeout: 5000,
           });
@@ -90,7 +93,7 @@ function Messages() {
     const doBeat = async () => {
       try {
         const me = getMeId();
-        await fetch("/api/messages/heartbeat", {
+        await fetch(`${API_URL}/api/messages/heartbeat`, {
           method: "POST",
           headers: { "x-user-id": me },
         });
@@ -104,7 +107,7 @@ function Messages() {
   useEffect(() => {
     const me = getMeId();
     if (!me) return;
-    const socket = ioClient("https://backend-vauju-1.onrender.com", {
+    const socket = ioClient(API_URL, {
       transports: ["websocket"],
       autoConnect: true,
     });
@@ -113,6 +116,8 @@ function Messages() {
     const identify = () => {
       try {
         socket.emit("identify", me);
+        // Send initial presence
+        socket.emit("presence", { userId: me, online: true });
       } catch (e) {}
     };
 
@@ -132,14 +137,14 @@ function Messages() {
       ) {
         setMessages((prev) => [...prev, m]);
         if (String(m.from) === String(selectedUser._id)) {
-          fetch(`/api/messages/seen/${m._id}`, {
+          fetch(`${API_URL}/api/messages/seen/${m._id}`, {
             method: "PUT",
             headers: { "x-user-id": getMeId() },
           });
         }
       }
 
-      // 🔔 Browser Notification (Always Show When Message Arrives)
+      // 🔔 Browser Notification
       const meId = getMeId();
       if (String(m.from) !== String(meId)) {
         if ("Notification" in window && Notification.permission === "granted") {
@@ -148,10 +153,9 @@ function Messages() {
           const body = m.text || "You’ve got a new message!";
           const notif = new Notification(title, {
             body,
-            icon: "/logo192.png", // change to your app logo
+            icon: "/logo192.png",
           });
 
-          // Click opens the messages page
           notif.onclick = () => {
             window.focus();
             navigate(`/messages/${m.from}`);
@@ -162,8 +166,23 @@ function Messages() {
       // Update user online state
       setUsers((prev) =>
         prev.map((u) => {
-          if (String(u._id) === String(m.from) || String(u._id) === String(m.to))
+          if (String(u._id) === String(m.from)) {
+            // Clear any existing timeout for this user
+            if (presenceTimeoutRef.current[u._id]) {
+              clearTimeout(presenceTimeoutRef.current[u._id]);
+            }
+            // Set timeout to mark user offline after 35 seconds of no activity
+            presenceTimeoutRef.current[u._id] = setTimeout(() => {
+              setUsers((prevUsers) =>
+                prevUsers.map((user) =>
+                  String(user._id) === String(u._id)
+                    ? { ...user, isOnline: false }
+                    : user
+                )
+              );
+            }, 35000);
             return { ...u, isOnline: true };
+          }
           return u;
         })
       );
@@ -177,11 +196,28 @@ function Messages() {
 
     socket.on("presence", ({ userId, online }) => {
       setUsers((prev) =>
-        prev.map((u) =>
-          String(u._id) === String(userId)
-            ? { ...u, isOnline: Boolean(online) }
-            : u
-        )
+        prev.map((u) => {
+          if (String(u._id) === String(userId)) {
+            // Clear existing timeout if user is online
+            if (online && presenceTimeoutRef.current[u._id]) {
+              clearTimeout(presenceTimeoutRef.current[u._id]);
+            }
+            // Set timeout for offline status if user goes offline
+            if (!online) {
+              presenceTimeoutRef.current[u._id] = setTimeout(() => {
+                setUsers((prevUsers) =>
+                  prevUsers.map((user) =>
+                    String(user._id) === String(userId)
+                      ? { ...user, isOnline: false }
+                      : user
+                  )
+                );
+              }, 5000); // Grace period before marking offline
+            }
+            return { ...u, isOnline: Boolean(online) };
+          }
+          return u;
+        })
       );
     });
 
@@ -190,6 +226,9 @@ function Messages() {
         socket.off("message");
         socket.off("seen");
         socket.off("presence");
+        // Clear all presence timeouts
+        Object.values(presenceTimeoutRef.current).forEach(clearTimeout);
+        socket.emit("presence", { userId: me, online: false });
       } catch (e) {}
       socket.disconnect();
       socketRef.current = null;
@@ -233,7 +272,7 @@ function Messages() {
         return;
       }
 
-      const res = await fetch(`/api/messages/conversation/${userId}`, {
+      const res = await fetch(`${API_URL}/api/messages/conversation/${userId}`, {
         headers: { "x-user-id": me },
         timeout: 10000,
       });
@@ -270,7 +309,7 @@ function Messages() {
         return;
       }
 
-      const res = await fetch("/api/messages/send", {
+      const res = await fetch(`${API_URL}/api/messages/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -306,14 +345,14 @@ function Messages() {
   const markAllAsSeenWith = async (userId) => {
     try {
       const me = getMeId();
-      const res = await fetch(`/api/messages/conversation/${userId}`, {
+      const res = await fetch(`${API_URL}/api/messages/conversation/${userId}`, {
         headers: { "x-user-id": me },
       });
       if (!res.ok) return;
       const msgs = await res.json();
       const unseen = msgs.filter((m) => String(m.from) === String(userId) && !m.seen);
       for (const m of unseen) {
-        await fetch(`/api/messages/seen/${m._id}`, {
+        await fetch(`${API_URL}/api/messages/seen/${m._id}`, {
           method: "PUT",
           headers: { "x-user-id": me },
         });

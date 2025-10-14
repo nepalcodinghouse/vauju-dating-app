@@ -3,13 +3,12 @@ import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
 // 🔗 Backend URL
-const BASE_URL = "https://backend-vauju-1.onrender.com";
+const BASE_URL = "http://localhost:5000/";
 
 function EditProfile() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
-    username: "",
     bio: "",
     age: "",
     gender: "other",
@@ -32,7 +31,6 @@ function EditProfile() {
       .then((data) =>
         setForm({
           name: data.name || "",
-          username: data.username || "",
           bio: data.bio || "",
           age: data.age || "",
           gender: data.gender || "other",
@@ -53,11 +51,6 @@ function EditProfile() {
   // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!/^[a-z0-9._]+$/i.test(form.username)) {
-      return toast.error(
-        "Username can only contain letters, numbers, dots, underscores"
-      );
-    }
 
     setLoading(true);
     const user = JSON.parse(localStorage.getItem("token"));
@@ -85,7 +78,7 @@ function EditProfile() {
           : "Profile updated successfully!"
       );
 
-      navigate(`/@${form.username}`);
+      navigate("/profile");
     } catch (err) {
       toast.error(err.message || "Failed to update profile");
     } finally {
@@ -108,21 +101,6 @@ function EditProfile() {
               name="name"
               value={form.name}
               onChange={handleChange}
-              className="w-full border rounded-xl px-4 py-2"
-              required
-            />
-          </div>
-
-          {/* Username */}
-          <div>
-            <label className="block font-medium text-gray-700 mb-1">
-              Username
-            </label>
-            <input
-              name="username"
-              value={form.username}
-              onChange={handleChange}
-              placeholder="e.g., abhayabikram"
               className="w-full border rounded-xl px-4 py-2"
               required
             />
