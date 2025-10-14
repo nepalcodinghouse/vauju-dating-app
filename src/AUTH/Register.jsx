@@ -11,22 +11,37 @@ function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // ✅ Email validation function
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ✅ Email check
+    if (!isValidEmail(email)) {
+      toast.error("❌ Please enter a valid email address!");
+      return;
+    }
+
+    // ✅ Password match check
     if (password !== confirmPassword) {
       toast.error("❌ Passwords do not match!");
+      return;
+    }
+
+    // ✅ Password strength check (optional)
+    if (password.length < 6) {
+      toast.error("⚠️ Password must be at least 6 characters!");
       return;
     }
 
     setLoading(true);
 
     try {
-      const { data } = await axios.post("https://backend-vauju-1.onrender.com/api/auth/register", {
-        name,
-        email,
-        password,
-      });
+      const { data } = await axios.post(
+        "https://backend-vauju-1.onrender.com/api/auth/register",
+        { name, email, password }
+      );
 
       toast.success(data.message || "🎉 Registered successfully!");
       setTimeout(() => navigate("/login"), 1500);

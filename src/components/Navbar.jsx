@@ -9,7 +9,6 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 🔥 Check login state on mount and listen for changes
   useEffect(() => {
     const checkAuth = () => {
       const t = JSON.parse(localStorage.getItem("token") || "null");
@@ -20,17 +19,10 @@ function Navbar() {
       else setBrand("HeartConnect");
     };
 
-    // initial check
     checkAuth();
-
-    // update when other tabs change localStorage
-    const onStorage = (e) => {
-      if (!e || e.key === "token") checkAuth();
-    };
-    window.addEventListener("storage", onStorage);
-
-    // update when same-tab code dispatches a custom event after login/logout
+    const onStorage = (e) => { if (!e || e.key === "token") checkAuth(); };
     const onAuthChange = () => checkAuth();
+    window.addEventListener("storage", onStorage);
     window.addEventListener("authChange", onAuthChange);
 
     return () => {
@@ -39,17 +31,12 @@ function Navbar() {
     };
   }, []);
 
-  // 🧠 Handle logout
   const handleLogout = () => {
     localStorage.removeItem("token");
-    // notify other components and tabs
     try {
       window.dispatchEvent(new Event("authChange"));
-      // also write to localStorage to trigger storage event in other tabs
       localStorage.setItem("__auth_change_ts", Date.now());
-    } catch (err) {
-      // ignore
-    }
+    } catch {}
     setIsLoggedIn(false);
     navigate("/login");
   };
@@ -81,9 +68,7 @@ function Navbar() {
                 key={item.name}
                 to={item.path}
                 className={`relative inline-flex items-center px-1.5 py-2 text-sm font-medium transition-colors ${
-                  isActive(item.path)
-                    ? "text-indigo-600"
-                    : "text-gray-700 hover:text-indigo-600"
+                  isActive(item.path) ? "text-indigo-600" : "text-gray-700 hover:text-indigo-600"
                 }`}
               >
                 {item.name}
@@ -93,7 +78,6 @@ function Navbar() {
               </Link>
             ))}
 
-            {/* 🔥 Show Profile or Login/Register */}
             {isLoggedIn ? (
               <div className="flex items-center gap-3">
                 <Link
@@ -136,63 +120,74 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Bottom Sheet Menu */}
       {isOpen && (
-        <div className="md:hidden bg-white/95 backdrop-blur px-3 pt-2 pb-4 space-y-1.5 border-t border-gray-100 shadow-sm">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              to={item.path}
-              className={`block px-3 py-2 rounded-md text-sm ${
-                isActive(item.path)
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-gray-700 hover:bg-gray-50 hover:text-indigo-700"
-              }`}
-              onClick={() => setIsOpen(false)}
-            >
-              {item.name}
-            </Link>
-          ))}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg px-4 py-4 z-50 animate-slide-up">
+          <div className="flex flex-col space-y-2">
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={`block px-3 py-2 rounded-md text-sm text-center ${
+                  isActive(item.path)
+                    ? "bg-indigo-50 text-indigo-700"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-indigo-700"
+                }`}
+                onClick={() => setIsOpen(false)}
+              >
+                {item.name}
+              </Link>
+            ))}
 
-          {isLoggedIn ? (
-            <div className="flex flex-col space-y-2">
-              <Link
-                to="/profile"
-                className="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition flex items-center"
-                onClick={() => setIsOpen(false)}
-              >
-                <User size={18} className="mr-2" /> Profile
-              </Link>
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setIsOpen(false);
-                }}
-                className="block px-3 py-2 rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="block px-3 py-2 rounded-md text-sm bg-indigo-600 text-white text-center hover:bg-indigo-700 transition"
-                onClick={() => setIsOpen(false)}
-              >
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="block px-3 py-2 rounded-md text-sm border border-indigo-600 text-indigo-600 text-center hover:bg-indigo-600 hover:text-white transition"
-                onClick={() => setIsOpen(false)}
-              >
-                Register
-              </Link>
-            </>
-          )}
+            {isLoggedIn ? (
+              <>
+                <Link
+                  to="/profile"
+                  className="block px-3 py-2 rounded-md text-sm text-center text-gray-700 hover:bg-gray-50 transition"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <User size={18} className="inline mr-1" /> Profile
+                </Link>
+                <button
+                  onClick={() => { handleLogout(); setIsOpen(false); }}
+                  className="block px-3 py-2 rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="block px-3 py-2 rounded-md text-sm bg-indigo-600 text-white text-center hover:bg-indigo-700 transition"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="block px-3 py-2 rounded-md text-sm border border-indigo-600 text-indigo-600 text-center hover:bg-indigo-600 hover:text-white transition"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Register
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       )}
+
+      <style>
+        {`
+          @keyframes slide-up {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+          .animate-slide-up {
+            animation: slide-up 0.3s ease-out forwards;
+          }
+        `}
+      </style>
     </nav>
   );
 }

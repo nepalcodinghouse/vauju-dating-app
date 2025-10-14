@@ -23,7 +23,7 @@ function Matches() {
       try {
         // Fetch my profile to determine visibility status and suspension
         const profRes = await fetch(
-          `http://localhost:5000/api/profile`,
+          `/api/profile`,
           { headers: { "x-user-id": token._id } }
         );
         const me = profRes.ok ? await profRes.json() : {};
@@ -32,7 +32,7 @@ function Matches() {
         setStatus({ pendingApproval, suspended });
 
         const res = await fetch(
-          `https://backend-vauju-1.onrender.com/api/profile/matches`,
+          `/api/profile/matches`,
           { headers: { "x-user-id": token._id } }
         );
         if (!res.ok) throw new Error("Failed to fetch matches");
