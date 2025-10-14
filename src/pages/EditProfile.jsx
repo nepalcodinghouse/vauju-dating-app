@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
 // 🔗 Backend URL
-const BASE_URL = "http://localhost:5000/";
+const BASE_URL = "https://backend-vauju-1.onrender.com/";
 
 function EditProfile() {
   const navigate = useNavigate();

@@ -26,7 +26,7 @@ function Register() {
     try {
       setLoading(true);
       const { data } = await axios.post(
-        "http://localhost:5000/api/auth/register",
+        "https://backend-vauju-1.onrender.com/api/auth/register",
         { username, name, email, password }
       );
       console.log("Registration success:", data);
