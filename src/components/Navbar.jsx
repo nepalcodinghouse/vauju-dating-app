@@ -5,7 +5,6 @@ import { Menu, X, User } from "lucide-react";
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [brand, setBrand] = useState("HeartConnect");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -13,10 +12,6 @@ function Navbar() {
     const checkAuth = () => {
       const t = JSON.parse(localStorage.getItem("token") || "null");
       setIsLoggedIn(!!t);
-      const g = (t && t.gender) ? String(t.gender).toLowerCase() : null;
-      if (g === "male") setBrand("Vauju Khoj Abhiyan");
-      else if (g === "female") setBrand("Vinaju Khoj Abhiyan");
-      else setBrand("HeartConnect");
     };
 
     checkAuth();
@@ -58,7 +53,7 @@ function Navbar() {
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
           <Link to="/" className="text-2xl font-bold text-indigo-600 tracking-tight hover:opacity-90 transition">
-            {brand}
+            AuraMeet
           </Link>
 
           {/* Desktop Menu */}
