@@ -1,8 +1,8 @@
+// src/pages/EditProfile.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
-// 🔗 Backend URL (Fixed: Remove trailing slash to avoid double-slash in paths)
 const BASE_URL = "https://backend-vauju-1.onrender.com";
 
 function EditProfile() {
@@ -16,10 +16,10 @@ function EditProfile() {
     interests: "",
     location: "",
     visible: false,
+    profilePic: "",
   });
   const [loading, setLoading] = useState(false);
 
-  // Load user profile
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("token"));
     if (!user || !user._id) return navigate("/login");
@@ -39,24 +39,30 @@ function EditProfile() {
           interests: (data.interests && data.interests.join(", ")) || "",
           location: data.location || "",
           visible: data.visible || false,
+          profilePic:
+            data.profilePic ||
+            "https://cdn-icons-png.flaticon.com/512/847/847969.png",
         })
       )
       .catch((err) => toast.error("Failed to load profile: " + err.message));
   }, [navigate]);
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
-  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setLoading(true);
     const user = JSON.parse(localStorage.getItem("token"));
     if (!user || !user._id) return;
+
+    if (Number(form.age) < 13) {
+      toast.error("You must be at least 13 years old.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch(`${BASE_URL}/api/profile`, {
@@ -67,22 +73,19 @@ function EditProfile() {
         },
         body: JSON.stringify({
           ...form,
-          interests: form.interests.split(",").map((i) => i.trim()).filter(Boolean),
+          interests: form.interests
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean),
         }),
       });
+
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || "Update failed");
 
-      // Update local storage token
       localStorage.setItem("token", JSON.stringify({ ...user, ...result }));
       window.dispatchEvent(new Event("authChange"));
-
-      toast.success(
-        form.visible
-          ? "Request sent. Admin approval required to appear in Matches."
-          : "Profile updated successfully!"
-      );
-
+      toast.success("Profile updated successfully!");
       navigate("/profile");
     } catch (err) {
       toast.error(err.message || "Failed to update profile");
@@ -91,172 +94,153 @@ function EditProfile() {
     }
   };
 
-  // ... (rest of the JSX remains unchanged from the previous version)
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
       <Toaster position="top-center" />
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 transform transition-all duration-300">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">
-          Edit Your Profile
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="w-full max-w-lg bg-white shadow-md rounded-2xl p-8">
+        {/* Profile Picture */}
+        <div className="flex flex-col items-center mb-6">
+          <img
+            src={form.profilePic}
+            alt="Profile"
+            className="w-28 h-28 rounded-full object-cover border-2 border-gray-200"
+          />
+          <label
+            htmlFor="profilePic"
+            className="text-sm text-blue-600 font-medium mt-2 cursor-pointer"
+          >
+            Change profile photo
+          </label>
+          <input
+            id="profilePic"
+            name="profilePic"
+            type="text"
+            value={form.profilePic}
+            onChange={handleChange}
+            placeholder="Enter image URL"
+            className="hidden"
+          />
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Username */}
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6">
+            <label className="sm:w-32 text-sm font-medium text-gray-700">
               Username
             </label>
             <input
-              id="username"
               name="username"
               value={form.username}
               onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-gray-400 outline-none"
+              placeholder="Username"
               required
-              placeholder="Enter your username"
             />
           </div>
 
           {/* Name */}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Name
-            </label>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6">
+            <label className="sm:w-32 text-sm font-medium text-gray-700">Name</label>
             <input
-              id="name"
               name="name"
               value={form.name}
               onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              required
-              placeholder="Enter your name"
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-gray-400 outline-none"
+              placeholder="Full name"
             />
           </div>
 
           {/* Bio */}
-          <div>
-            <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
-              Bio
-            </label>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:gap-6">
+            <label className="sm:w-32 text-sm font-medium text-gray-700">Bio</label>
             <textarea
-              id="bio"
               name="bio"
               value={form.bio}
               onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              rows="4"
-              placeholder="Tell us about yourself"
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 h-20 resize-none focus:ring-1 focus:ring-gray-400 outline-none"
+              placeholder="Tell something about yourself"
             />
           </div>
 
           {/* Age & Gender */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="age" className="block text-sm font-medium text-gray-700">
-                Age
-              </label>
-              <input
-                id="age"
-                name="age"
-                type="number"
-                value={form.age}
-                onChange={handleChange}
-                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                placeholder="Your age"
-                min="18"
-              />
-            </div>
-            <div>
-              <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-                Gender
-              </label>
-              <select
-                id="gender"
-                name="gender"
-                value={form.gender}
-                onChange={handleChange}
-                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
+            <input
+              name="age"
+              type="number"
+              value={form.age}
+              onChange={handleChange}
+              min="13"
+              className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-gray-400 outline-none"
+              placeholder="Age (13+)"
+            />
+            <select
+              name="gender"
+              value={form.gender}
+              onChange={handleChange}
+              className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-gray-400 outline-none"
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
           </div>
 
           {/* Interests */}
-          <div>
-            <label htmlFor="interests" className="block text-sm font-medium text-gray-700">
-              Interests (comma-separated)
-            </label>
-            <input
-              id="interests"
-              name="interests"
-              value={form.interests}
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              placeholder="e.g., hiking, reading, music"
-            />
-          </div>
+          <input
+            name="interests"
+            value={form.interests}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-gray-400 outline-none"
+            placeholder="Interests (comma separated)"
+          />
 
           {/* Location */}
-          <div>
-            <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-              Location
-            </label>
-            <input
-              id="location"
-              name="location"
-              value={form.location}
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              placeholder="Your city or country"
-            />
-          </div>
+          <input
+            name="location"
+            value={form.location}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-gray-400 outline-none"
+            placeholder="Location"
+          />
 
-          {/* Visible toggle */}
-          <div className="flex items-center justify-between bg-gray-100 p-4 rounded-lg">
-            <label htmlFor="visible" className="text-sm font-medium text-gray-700">
-              Show me in Matches
-            </label>
-            <div className="relative inline-block w-10 mr-2 align-middle select-none">
+          {/* Visibility Toggle */}
+          <div className="flex items-center justify-between border-t pt-4">
+            <span className="text-sm font-medium text-gray-700">
+              Show me in matches
+            </span>
+            <label className="relative inline-flex items-center cursor-pointer">
               <input
-                id="visible"
-                name="visible"
                 type="checkbox"
+                name="visible"
                 checked={form.visible}
                 onChange={handleChange}
-                className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 checked:translate-x-4 checked:border-blue-500"
+                className="sr-only peer"
               />
-              <label
-                htmlFor="visible"
-                className={`block overflow-hidden h-6 rounded-full cursor-pointer transition-colors duration-200 ${
-                  form.visible ? "bg-blue-500" : "bg-gray-300"
-                }`}
-              ></label>
-            </div>
+              <div className="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 transition-all"></div>
+              <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full peer-checked:translate-x-5 transition-all"></div>
+            </label>
           </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-2.5 rounded-lg text-white font-medium transition-colors duration-200 ${
-              loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
-          >
-            {loading ? "Saving..." : "Save Changes"}
-          </button>
-
-          {/* Cancel Button */}
-          <button
-            type="button"
-            onClick={() => navigate("/profile")}
-            className="w-full py-2.5 rounded-lg text-gray-700 font-medium bg-gray-200 hover:bg-gray-300 transition-colors duration-200"
-          >
-            Cancel
-          </button>
+          {/* Buttons */}
+          <div className="flex gap-4 pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className={`flex-1 py-2 rounded-lg text-white font-medium transition ${
+                loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {loading ? "Saving..." : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/profile")}
+              className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       </div>
     </div>

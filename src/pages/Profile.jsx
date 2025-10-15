@@ -68,67 +68,124 @@ function Profile() {
     );
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
+    <div className="min-h-screen px-4 py-8 bg-gray-50">
       <Toaster position="top-center" />
       {suspended && (
-        <div className="max-w-5xl mx-auto mb-4 p-3 rounded border">
+        <div className="max-w-5xl mx-auto mb-4 p-3 rounded border text-center bg-yellow-50 border-yellow-200 text-yellow-700">
           Your account is suspended. You are being logged out.
         </div>
       )}
 
-      <div className="bg-white p-8 w-full max-w-5xl mx-auto rounded-2xl shadow-md">
-        <h2 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
-          {user.name}
-          {user.isBlueTick && (
-            <CheckCircle size={20} className="text-blue-500" />
-          )}
-        </h2>
-        <p className="text-gray-500 text-sm mb-6">{user.email}</p>
+      <div className="bg-white p-6 w-full max-w-4xl mx-auto rounded-2xl shadow-sm border border-gray-100">
+        {/* Profile Header */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 border-b border-gray-100 pb-6">
+          {/* Profile Pic */}
+          <div className="relative w-32 h-32">
+            <img
+              src={
+                user.profilePic ||
+                "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+              }
+              alt="profile"
+              className="w-32 h-32 rounded-full object-cover border border-gray-300"
+            />
+            {user.isBlueTick && (
+              <CheckCircle
+                size={22}
+                className="absolute bottom-1 right-1 text-blue-500 bg-white rounded-full"
+              />
+            )}
+          </div>
 
-        <div className="text-left space-y-2 bg-gray-50 p-6 rounded-2xl border border-gray-100">
-          {user.bio && (
-            <p>
-              <span className="font-semibold text-gray-600">Bio:</span>{" "}
-              {user.bio}
-            </p>
-          )}
+          {/* Name, username, and stats */}
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <h2 className="text-2xl font-bold text-gray-800">
+                {user.name}
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate("/editprofile")}
+                  className="flex items-center gap-1 bg-gray-100 text-gray-700 px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-200 transition"
+                >
+                  <Edit2 size={14} /> Edit Profile
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("token");
+                    window.dispatchEvent(new Event("authChange"));
+                    navigate("/login");
+                  }}
+                  className="flex items-center gap-1 bg-gray-100 text-gray-700 px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-200 transition"
+                >
+                  <LogOut size={14} /> Logout
+                </button>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm">@{user.username}</p>
+
+            {/* Follower Stats */}
+            <div className="flex gap-6 mt-3 text-sm text-gray-800">
+              <p>
+                <span className="font-semibold">{user.postsCount || 0}</span>{" "}
+                posts
+              </p>
+              <p>
+                <span className="font-semibold">{user.followers || 0}</span>{" "}
+                followers
+              </p>
+              <p>
+                <span className="font-semibold">{user.following || 0}</span>{" "}
+                following
+              </p>
+            </div>
+
+            {/* Bio */}
+            {user.bio && (
+              <p className="mt-3 text-gray-700 leading-snug">{user.bio}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Details Section */}
+        <div className="mt-6 space-y-2 text-gray-700 text-sm">
           <p>
-            <span className="font-semibold text-gray-600">Age:</span>{" "}
-            {user.age || "-"}
+            <span className="font-semibold">Age:</span> {user.age || "-"}
           </p>
           <p>
-            <span className="font-semibold text-gray-600">Gender:</span>{" "}
-            {user.gender || "-"}
+            <span className="font-semibold">Gender:</span> {user.gender || "-"}
           </p>
           <p>
-            <span className="font-semibold text-gray-600">Location:</span>{" "}
+            <span className="font-semibold">Location:</span>{" "}
             {user.location || "-"}
           </p>
           {user.interests?.length > 0 && (
             <p>
-              <span className="font-semibold text-gray-600">Interests:</span>{" "}
+              <span className="font-semibold">Interests:</span>{" "}
               {user.interests.join(", ")}
             </p>
           )}
         </div>
 
-        <div className="flex gap-3 justify-end mt-6">
-          <button
-            onClick={() => navigate("/editprofile")}
-            className="inline-flex items-center gap-2 bg-black text-white font-semibold px-6 py-2 rounded-full hover:bg-gray-700 transition shadow-md"
-          >
-            <Edit2 size={16} /> Edit Profile
-          </button>
-          <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              window.dispatchEvent(new Event("authChange"));
-              navigate("/login");
-            }}
-            className="inline-flex items-center gap-2 bg-gray-200 text-gray-700 font-semibold px-4 py-2 rounded-full hover:bg-gray-300 cursor-pointer transition"
-          >
-            <LogOut size={16} /> Logout
-          </button>
+        {/* Posts Section (Mock Instagram Grid) */}
+        <div className="mt-10">
+          <h3 className="text-gray-800 font-semibold mb-4">Posts</h3>
+          <div className="grid grid-cols-3 gap-2">
+            {user.posts && user.posts.length > 0 ? (
+              user.posts.map((p, i) => (
+                <img
+                  key={i}
+                  src={p.image || "https://via.placeholder.com/300"}
+                  alt="post"
+                  className="aspect-square object-cover rounded-md hover:opacity-80 cursor-pointer transition"
+                />
+              ))
+            ) : (
+              <p className="col-span-3 text-center text-gray-400 py-8">
+                No posts yet 😶 (Post system are on construction)
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

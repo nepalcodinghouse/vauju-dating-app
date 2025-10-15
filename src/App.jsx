@@ -12,13 +12,14 @@ import Register from "./AUTH/Register";
 import Login from "./AUTH/Login";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
-import Messages from "./pages/Messages";
+import Messages from "./Message/Messages";
 import Matches from "./pages/Matches";
 import Admin from "./Admin/Admin";
 import AdminLogin from "./Admin/Auth/Login";
 import SuspendUsers from "./Admin/SuspendUsers";
 import ManageUser from "./Admin/ManageUsers";
 import PageNotFound from "./pages/PageNotFound";
+import Support from "./pages/Support";
 
 import "./App.css";
 
@@ -60,6 +61,7 @@ function AppContent() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:userId" element={<Messages />} />
           <Route path="/matches" element={<Matches />} />
+          <Route path="/support" element={<Support />} />
 
           {/* Dynamic username route */}
           <Route path="/@:username" element={<Profile />} />

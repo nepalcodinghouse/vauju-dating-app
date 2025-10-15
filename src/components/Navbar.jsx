@@ -1,25 +1,36 @@
+// src/components/XSidebar.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, User } from "lucide-react";
+import Support from "../assets/support.png";
+import {
+  Home,
+  MessageSquare,
+  Users,
+  User,
+  LogOut,
+  LogIn,
+  UserPlus,
+} from "lucide-react";
 
-function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
+function XSidebar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     const checkAuth = () => {
-      const t = JSON.parse(localStorage.getItem("token") || "null");
-      setIsLoggedIn(!!t);
+      const token = JSON.parse(localStorage.getItem("token") || "null");
+      setIsLoggedIn(!!token);
     };
-
     checkAuth();
-    const onStorage = (e) => { if (!e || e.key === "token") checkAuth(); };
+
+    const onStorage = (e) => {
+      if (!e || e.key === "token") checkAuth();
+    };
     const onAuthChange = () => checkAuth();
+
     window.addEventListener("storage", onStorage);
     window.addEventListener("authChange", onAuthChange);
-
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("authChange", onAuthChange);
@@ -37,9 +48,10 @@ function Navbar() {
   };
 
   const navItems = [
-    { name: "Home", path: "/" },
-    { name: "Matches", path: "/matches" },
-    { name: "Messages", path: "/messages" },
+    { path: "/", icon: <Home size={22} /> },
+    { path: "/matches", icon: <Users size={22} /> },
+    { path: "/messages", icon: <MessageSquare size={22} /> },
+    { path: "/support", icon: <img src={Support} alt="Support" className="w-6 h-6" /> },
   ];
 
   const isActive = (path) => {
@@ -48,143 +60,67 @@ function Navbar() {
   };
 
   return (
-    <nav className="bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 text-gray-700 border-b border-gray-100 sticky top-0 w-full z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          {/* Logo */}
-          <Link to="/" className="text-2xl font-bold text-indigo-600 tracking-tight hover:opacity-90 transition">
-            AuraMeet
-          </Link>
+    <aside className="fixed left-0 top-0 h-full w-20 bg-white border-r border-gray-200 shadow-sm flex flex-col justify-between z-50">
+      {/* Top Nav */}
+      <div className="flex flex-col items-center mt-6 space-y-2">
+        <Link
+          to="/"
+          className="text-2xl font-bold text-black flex items-center justify-center py-6 border-b border-gray-100 w-full"
+        >
+          a.m
+        </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`relative inline-flex items-center px-1.5 py-2 text-sm font-medium transition-colors ${
-                  isActive(item.path) ? "text-indigo-600" : "text-gray-700 hover:text-indigo-600"
-                }`}
-              >
-                {item.name}
-                {isActive(item.path) && (
-                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 w-6 bg-indigo-600 rounded-full" />
-                )}
-              </Link>
-            ))}
-
-            {isLoggedIn ? (
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/profile"
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition"
-                >
-                  <User size={18} />
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/login"
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md border border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white transition"
-                >
-                  Register
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
-            <button onClick={() => setIsOpen(!isOpen)}>
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </div>
+        <nav className="flex flex-col mt-6 space-y-2">
+          {navItems.map((item, idx) => (
+            <Link
+              key={idx}
+              to={item.path}
+              className={`flex items-center justify-center w-full p-3 rounded-xl transition-all hover:bg-gray-100 ${
+                isActive(item.path) ? "bg-gray-200 text-black" : "text-gray-700"
+              }`}
+            >
+              {item.icon}
+            </Link>
+          ))}
+        </nav>
       </div>
 
-      {/* Mobile Bottom Sheet Menu */}
-      {isOpen && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg px-4 py-4 z-50 animate-slide-up">
-          <div className="flex flex-col space-y-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`block px-3 py-2 rounded-md text-sm text-center ${
-                  isActive(item.path)
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-indigo-700"
-                }`}
-                onClick={() => setIsOpen(false)}
-              >
-                {item.name}
-              </Link>
-            ))}
-
-            {isLoggedIn ? (
-              <>
-                <Link
-                  to="/profile"
-                  className="block px-3 py-2 rounded-md text-sm text-center text-gray-700 hover:bg-gray-50 transition"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <User size={18} className="inline mr-1" /> Profile
-                </Link>
-                <button
-                  onClick={() => { handleLogout(); setIsOpen(false); }}
-                  className="block px-3 py-2 rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="block px-3 py-2 rounded-md text-sm bg-indigo-600 text-white text-center hover:bg-indigo-700 transition"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="block px-3 py-2 rounded-md text-sm border border-indigo-600 text-indigo-600 text-center hover:bg-indigo-600 hover:text-white transition"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Register
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      <style>
-        {`
-          @keyframes slide-up {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-          }
-          .animate-slide-up {
-            animation: slide-up 0.3s ease-out forwards;
-          }
-        `}
-      </style>
-    </nav>
+      {/* Bottom Auth */}
+      <div className="flex flex-col items-center mb-6 space-y-3 px-1 border-t border-gray-100 pt-4">
+        {isLoggedIn ? (
+          <>
+            <Link
+              to="/profile"
+              className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-gray-100 transition"
+            >
+              <User size={22} />
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-center w-12 h-12 rounded-full hover:bg-red-100 transition text-gray-800 hover:text-red-500"
+            >
+              <LogOut size={20} />
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              to="/login"
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-black text-white transition"
+            >
+              <LogIn size={18} />
+            </Link>
+            <Link
+              to="/register"
+              className="flex items-center justify-center w-12 h-12 rounded-full border border-black text-black transition"
+            >
+              <UserPlus size={18} />
+            </Link>
+          </>
+        )}
+      </div>
+    </aside>
   );
 }
 
-export default Navbar;
+export default XSidebar;

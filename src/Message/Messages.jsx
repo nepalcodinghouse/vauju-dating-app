@@ -15,21 +15,20 @@ function Messages() {
   const [text, setText] = useState("");
   const convoRef = useRef(null);
   const socketRef = useRef(null);
-  const presenceTimeoutRef = useRef({}); // Track presence timeouts
+  const presenceTimeoutRef = useRef({});
 
   // 🔔 Request Notification Permission Once
   useEffect(() => {
-    if ("Notification" in window) {
-      if (Notification.permission === "default") {
-        Notification.requestPermission().then((perm) => {
-          if (perm === "granted") {
-            console.log("✅ Notifications enabled");
-          }
-        });
-      }
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().then((perm) => {
+        if (perm === "granted") {
+          console.log("✅ Notifications enabled");
+        }
+      });
     }
   }, []);
 
+  // Fetch users and their online status
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -81,14 +80,23 @@ function Messages() {
       }
     };
     fetchUsers();
-  }, []);
+  }, [navigate]);
 
+  // Handle user selection based on URL params
   useEffect(() => {
-    if (!params.userId || users.length === 0) return;
+    if (!params.userId) {
+      // Clear state when navigating to /messages
+      setSelectedUser(null);
+      setMessages([]);
+      Object.values(presenceTimeoutRef.current).forEach(clearTimeout);
+      presenceTimeoutRef.current = {};
+      return;
+    }
     const u = users.find((x) => String(x._id) === String(params.userId));
     if (u) handleSelectUser(u);
   }, [params.userId, users]);
 
+  // Heartbeat for presence
   useEffect(() => {
     const doBeat = async () => {
       try {
@@ -104,9 +112,20 @@ function Messages() {
     return () => clearInterval(t);
   }, []);
 
+  // Socket.IO setup with reinitialization on user change
   useEffect(() => {
     const me = getMeId();
-    if (!me) return;
+    if (!me || !selectedUser) return;
+
+    // Disconnect previous socket if it exists
+    if (socketRef.current) {
+      socketRef.current.off("message");
+      socketRef.current.off("seen");
+      socketRef.current.off("presence");
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
     const socket = ioClient(API_URL, {
       transports: ["websocket"],
       autoConnect: true,
@@ -116,20 +135,17 @@ function Messages() {
     const identify = () => {
       try {
         socket.emit("identify", me);
-        // Send initial presence
         socket.emit("presence", { userId: me, online: true });
-      } catch (e) {}
+      } catch {}
     };
 
     socket.on("connect", identify);
     socket.io?.on?.("reconnect", identify);
     socket.on("connect_error", (err) =>
-      console.warn("socket connect_error", err?.message || err)
+      console.warn("Socket connect_error", err?.message || err)
     );
 
-    // 🔥 When message received
     socket.on("message", (m) => {
-      // Update chat if it's the selected user
       if (
         selectedUser &&
         (String(m.from) === String(selectedUser._id) ||
@@ -144,34 +160,27 @@ function Messages() {
         }
       }
 
-      // 🔔 Browser Notification
       const meId = getMeId();
-      if (String(m.from) !== String(meId)) {
-        if ("Notification" in window && Notification.permission === "granted") {
-          const sender = users.find((u) => String(u._id) === String(m.from));
-          const title = sender ? `${sender.name} sent a message` : "New Message";
-          const body = m.text || "You’ve got a new message!";
-          const notif = new Notification(title, {
-            body,
-            icon: "/logo192.png",
-          });
-
-          notif.onclick = () => {
-            window.focus();
-            navigate(`/messages/${m.from}`);
-          };
-        }
+      if (String(m.from) !== String(meId) && "Notification" in window && Notification.permission === "granted") {
+        const sender = users.find((u) => String(u._id) === String(m.from));
+        const title = sender ? `${sender.name} sent a message` : "New Message";
+        const body = m.text || "You’ve got a new message!";
+        const notif = new Notification(title, {
+          body,
+          icon: "/logo192.png",
+        });
+        notif.onclick = () => {
+          window.focus();
+          navigate(`/messages/${m.from}`);
+        };
       }
 
-      // Update user online state
       setUsers((prev) =>
         prev.map((u) => {
           if (String(u._id) === String(m.from)) {
-            // Clear any existing timeout for this user
             if (presenceTimeoutRef.current[u._id]) {
               clearTimeout(presenceTimeoutRef.current[u._id]);
             }
-            // Set timeout to mark user offline after 35 seconds of no activity
             presenceTimeoutRef.current[u._id] = setTimeout(() => {
               setUsers((prevUsers) =>
                 prevUsers.map((user) =>
@@ -198,11 +207,9 @@ function Messages() {
       setUsers((prev) =>
         prev.map((u) => {
           if (String(u._id) === String(userId)) {
-            // Clear existing timeout if user is online
             if (online && presenceTimeoutRef.current[u._id]) {
               clearTimeout(presenceTimeoutRef.current[u._id]);
             }
-            // Set timeout for offline status if user goes offline
             if (!online) {
               presenceTimeoutRef.current[u._id] = setTimeout(() => {
                 setUsers((prevUsers) =>
@@ -212,7 +219,7 @@ function Messages() {
                       : user
                   )
                 );
-              }, 5000); // Grace period before marking offline
+              }, 5000);
             }
             return { ...u, isOnline: Boolean(online) };
           }
@@ -226,14 +233,14 @@ function Messages() {
         socket.off("message");
         socket.off("seen");
         socket.off("presence");
-        // Clear all presence timeouts
         Object.values(presenceTimeoutRef.current).forEach(clearTimeout);
+        presenceTimeoutRef.current = {};
         socket.emit("presence", { userId: me, online: false });
-      } catch (e) {}
-      socket.disconnect();
-      socketRef.current = null;
+        socket.disconnect();
+        socketRef.current = null;
+      } catch {}
     };
-  }, [selectedUser, users]);
+  }, [selectedUser, navigate]); // Reinitialize socket when selectedUser changes
 
   const getMeId = () => {
     const t = JSON.parse(localStorage.getItem("token")) || {};
@@ -241,6 +248,11 @@ function Messages() {
   };
 
   const handleSelectUser = async (user) => {
+    // Clear previous state to remove "buffer"
+    setMessages([]);
+    Object.values(presenceTimeoutRef.current).forEach(clearTimeout);
+    presenceTimeoutRef.current = {};
+
     setSelectedUser(user);
     navigate(`/messages/${user._id}`);
     await fetchConversation(user._id);
@@ -363,6 +375,25 @@ function Messages() {
     }
   };
 
+  // Cleanup when navigating away from Messages component
+  useEffect(() => {
+    return () => {
+      // Clear all state and socket when component unmounts
+      setMessages([]);
+      setSelectedUser(null);
+      Object.values(presenceTimeoutRef.current).forEach(clearTimeout);
+      presenceTimeoutRef.current = {};
+      if (socketRef.current) {
+        socketRef.current.off("message");
+        socketRef.current.off("seen");
+        socketRef.current.off("presence");
+        socketRef.current.emit("presence", { userId: getMeId(), online: false });
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <div className="flex h-screen bg-white">
       <Toaster position="top-right" />
@@ -373,10 +404,9 @@ function Messages() {
           selectedUser ? "hidden sm:block" : ""
         }`}
       >
-        <h2 className="text-xl font-semibold text-center py-3 border-b bg-gray-50">
+        <h2 className="text-xl font-semibold text-left py-3 border-b bg-gray-50">
           Chats
         </h2>
-
         {users.length > 0 ? (
           users.map((user) => (
             <div
@@ -392,7 +422,11 @@ function Messages() {
                   {user.name}
                 </h3>
                 <p className="text-[12px] text-gray-500 truncate">
-                  {user.email}
+                  {user.recentMessage
+                    ? user.recentMessage.length > 40
+                      ? user.recentMessage.slice(0, 40) + "..."
+                      : user.recentMessage
+                    : "No messages yet"}
                 </p>
               </div>
               <Circle
@@ -420,6 +454,9 @@ function Messages() {
                 <button
                   onClick={() => {
                     setSelectedUser(null);
+                    setMessages([]);
+                    Object.values(presenceTimeoutRef.current).forEach(clearTimeout);
+                    presenceTimeoutRef.current = {};
                     navigate("/messages");
                   }}
                   className="mr-2 sm:hidden text-gray-600 font-medium hover:text-gray-800"
@@ -459,10 +496,8 @@ function Messages() {
                   const isMine = String(m.from) === meId;
                   const prev = messages[idx - 1];
                   const next = messages[idx + 1];
-                  const sameAsPrev =
-                    prev && String(prev.from) === String(m.from);
-                  const sameAsNext =
-                    next && String(next.from) === String(m.from);
+                  const sameAsPrev = prev && String(prev.from) === String(m.from);
+                  const sameAsNext = next && String(next.from) === String(m.from);
                   const isStartOfGroup = !sameAsPrev;
                   const isEndOfGroup = !sameAsNext;
                   const showDateDivider = (() => {
@@ -474,9 +509,7 @@ function Messages() {
                   return (
                     <div
                       key={m._id}
-                      className={`my-1 max-w-2xl ${
-                        isMine ? "ml-auto" : "mr-auto"
-                      }`}
+                      className={`my-1 max-w-2xl ${isMine ? "ml-auto" : "mr-auto"}`}
                     >
                       {showDateDivider && (
                         <div className="flex items-center justify-center my-2">
@@ -513,9 +546,7 @@ function Messages() {
                                 isMine ? "text-gray-400" : "text-gray-500"
                               }`}
                             >
-                              {isMine
-                                ? "You unsent a message"
-                                : "Message unsent"}
+                              {isMine ? "You unsent a message" : "Message unsent"}
                             </span>
                           ) : (
                             m.text
@@ -563,13 +594,6 @@ function Messages() {
           </div>
         )}
       </main>
-
-      <button
-        onClick={() => navigate("/")}
-        className="fixed bottom-4 left-4 sm:hidden bg-gray-900 text-white text-[12px] px-3 py-2 rounded-full shadow-lg"
-      >
-        Home
-      </button>
     </div>
   );
 }
