@@ -33,7 +33,7 @@ function ManageUsers() {
     if (!confirm('Delete this user?')) return;
     setBusy(x => ({ ...x, [id]: true }));
     try {
-      const res = await fetch(`http://localhost:5000/admin/users/${id}`, {
+      const res = await fetch(`https://backend-vauju-1.onrender.com/admin/users/${id}`, {
         method: 'DELETE',
         headers: { 'x-admin-token': token }
       });
@@ -44,7 +44,7 @@ function ManageUsers() {
   const toggleVerify = async (id, next) => {
     setBusy(x => ({ ...x, [id]: true }));
     try {
-      const res = await fetch(`http://localhost:5000/admin/verify/${id}`, {
+      const res = await fetch(`https://backend-vauju-1.onrender.com/admin/verify/${id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
         body: JSON.stringify({ verified: next })
