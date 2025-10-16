@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from "react-route
 import Header from "./components/Header";
 import Navbar from "./components/Navbar";
 import MobileNavbar from "./components/MobileNavbar";
+import InstallPrompt from "./components/InstallPrompt";
 
 // Pages
 import Home from "./pages/Home";
@@ -18,11 +19,12 @@ import Admin from "./Admin/Admin";
 import AdminLogin from "./Admin/Auth/Login";
 import SuspendUsers from "./Admin/SuspendUsers";
 import ManageUser from "./Admin/ManageUsers";
-import PageNotFound from "./pages/PageNotFound";
 import Support from "./pages/Support";
+import PageNotFound from "./pages/PageNotFound";
 
 import "./App.css";
 
+// Main App Content with conditional layout
 function AppContent() {
   const location = useLocation();
 
@@ -35,7 +37,8 @@ function AppContent() {
   ].includes(location.pathname) || location.pathname.startsWith("/messages/");
 
   return (
-    <div className="App flex flex-col min-h-screen">
+    <div className="App flex flex-col min-h-screen relative">
+      {/* Header & Navbar */}
       {!hideLayout && (
         <>
           {/* Mobile Header */}
@@ -50,9 +53,10 @@ function AppContent() {
         </>
       )}
 
+      {/* Main content */}
       <main className="flex-1">
         <Routes>
-          {/* Main user routes */}
+          {/* User routes */}
           <Route path="/" element={<Home />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
@@ -72,7 +76,7 @@ function AppContent() {
           <Route path="/admin/suspend" element={<SuspendUsers />} />
           <Route path="/admin/manage-users" element={<ManageUser />} />
 
-          {/* Fallback 404 */}
+          {/* 404 fallback */}
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </main>
@@ -83,10 +87,14 @@ function AppContent() {
           <MobileNavbar />
         </div>
       )}
+
+      {/* PWA Install Button (always at bottom) */}
+      <InstallPrompt />
     </div>
   );
 }
 
+// Main App wrapper with Router
 export default function App() {
   return (
     <Router>
