@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.jsx";
 import "./index.css";
+import App from "./App.jsx";
 
 // Register PWA
 if ("serviceWorker" in navigator) {
@@ -9,7 +9,7 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/sw.js")
       .then((reg) => console.log("✅ SW registered", reg))
-      .catch((err) => console.log("❌ SW registration failed", err));
+      .catch((err) => console.log("❌ SW failed", err));
   });
 }
 
