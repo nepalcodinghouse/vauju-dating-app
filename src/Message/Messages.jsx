@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io as ioClient } from "socket.io-client";
-import { UserCircle2, MessageSquare, Circle } from "lucide-react";
+import { UserCircle2, MessageSquare, Circle, ArrowLeft  } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 const API_URL = "https://backend-vauju-1.onrender.com";
@@ -16,6 +16,14 @@ function Messages() {
   const convoRef = useRef(null);
   const socketRef = useRef(null);
   const presenceTimeoutRef = useRef({});
+
+
+  let messageCache = []
+
+
+  const goToHome = () => {
+    navigate("/");
+  };
 
   // 🔔 Request Notification Permission Once
   useEffect(() => {
@@ -36,6 +44,12 @@ function Messages() {
         if (!token._id) {
           console.warn("No user token found");
           return;
+        }
+        if (messageCache.length > 0) {
+          setUsers(messageCache);
+          return;
+        } else {
+          messageCache = users;
         }
 
         const res = await fetch(`${API_URL}/api/profile/messages-users`, {
@@ -404,9 +418,21 @@ function Messages() {
           selectedUser ? "hidden sm:block" : ""
         }`}
       >
-        <h2 className="text-xl font-semibold text-left py-3 border-b bg-gray-50">
-          Chats
-        </h2>
+ <div className="flex items-center bg-gray-50 border-b border-gray-300 px-4 py-3">
+ <button 
+  onClick={goToHome} // ✅ capital C
+  className="p-2 rounded-full hover:bg-gray-200 transition"
+>
+  <ArrowLeft className="h-6 w-6 cursor-pointer text-gray-700" />
+</button>
+
+  <h2 className="flex-1 text-center text-lg font-semibold text-gray-900">
+    Chats
+  </h2>
+</div>
+
+
+
         {users.length > 0 ? (
           users.map((user) => (
             <div
@@ -418,16 +444,16 @@ function Messages() {
             >
               <UserCircle2 className="w-9 h-9 text-gray-400" />
               <div className="ml-3 flex-1 overflow-hidden">
-                <h3 className="text-[15px] font-medium truncate text-gray-900">
+                <h3 className="text-[15px] font-semibold truncate text-gray-900">
                   {user.name}
                 </h3>
-                <p className="text-[12px] text-gray-500 truncate">
-                  {user.recentMessage
-                    ? user.recentMessage.length > 40
-                      ? user.recentMessage.slice(0, 40) + "..."
-                      : user.recentMessage
-                    : "No messages yet"}
-                </p>
+              <p className="text-gray-500 text-sm">
+                {user.lastMessage
+                  ? user.lastMessage.length > 30
+                    ? user.lastMessage.slice(0, 30) + "..."
+                    : user.lastMessage
+                  : "No messages yet"}
+              </p>
               </div>
               <Circle
                 className={`w-2.5 h-2.5 ml-2 ${
@@ -449,7 +475,7 @@ function Messages() {
       >
         {selectedUser ? (
           <>
-            <header className="flex items-center justify-between p-3 border-b bg-white/90 backdrop-blur sticky top-0 z-10">
+            <header className="flex items-center justify-between p-3 border-b border-b-[#ccc] bg-white/90 backdrop-blur sticky top-0 z-10">
               <div className="flex items-center">
                 <button
                   onClick={() => {
@@ -461,7 +487,7 @@ function Messages() {
                   }}
                   className="mr-2 sm:hidden text-gray-600 font-medium hover:text-gray-800"
                 >
-                  Back
+                    <ArrowLeft />
                 </button>
                 <UserCircle2 className="w-8 h-8 text-gray-400" />
                 <div className="ml-3">
@@ -477,12 +503,7 @@ function Messages() {
                   </span>
                 </div>
               </div>
-              <button
-                onClick={() => navigate("/")}
-                className="text-[12px] px-3 py-1 rounded-full bg-gray-900 text-white hover:bg-black"
-              >
-                Home
-              </button>
+             
             </header>
 
             <div ref={convoRef} className="flex-1 p-3 overflow-y-auto bg-white">

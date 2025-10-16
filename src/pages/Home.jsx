@@ -81,7 +81,7 @@ function Home() {
           </h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-8">
             Join our growing community and meet people who share your vibe.
-            Whether you’re looking for love, friendship, or just fun — start connecting today.
+            Whether you’re looking for love, friendship, or just fun start connecting today.
           </p>
           <button
             onClick={() => navigate("/explore")}
