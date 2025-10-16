@@ -32,7 +32,7 @@ function AppContent() {
     "/register",
     "/messages",
     "/admin/login"
-  ].some(path => location.pathname === path || location.pathname.startsWith("/messages/"));
+  ].includes(location.pathname) || location.pathname.startsWith("/messages/");
 
   return (
     <div className="App flex flex-col min-h-screen">

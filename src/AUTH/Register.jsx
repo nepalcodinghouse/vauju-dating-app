@@ -1,23 +1,33 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
 
 function Register() {
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
-  const [username , setUsername] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({}); // store backend or validation errors
+  const [errors, setErrors] = useState({});
+
+  // Regex for allowed emails
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|hotmail\.com|outlook\.com)$/;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
 
-    // Frontend password confirmation check
+    // 1️⃣ Check email first
+    if (!emailRegex.test(email)) {
+      toast.error("Invalid email! Only Gmail, Hotmail, Outlook allowed.");
+      return;
+    }
+
+    // 2️⃣ Check password confirmation
     if (password !== confirmPassword) {
       setErrors({ confirmPassword: "Passwords do not match" });
       return;
@@ -27,7 +37,7 @@ function Register() {
       setLoading(true);
       const { data } = await axios.post(
         "https://backend-vauju-1.onrender.com/api/auth/register",
-        { username, name, email, password }
+        { username, name, email, password, captchaVerified: true }
       );
       console.log("Registration success:", data);
       setLoading(false);
@@ -41,6 +51,7 @@ function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <Toaster />
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Sign Up</h2>
 
@@ -49,7 +60,7 @@ function Register() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
-               <div>
+          <div>
             <label className="block mb-1 font-medium">Username</label>
             <input
               type="text"
@@ -59,7 +70,8 @@ function Register() {
               required
               autoComplete="off"
             />
-            </div>
+          </div>
+
           <div>
             <label className="block mb-1 font-medium">Name</label>
             <input
@@ -71,7 +83,7 @@ function Register() {
               autoComplete="off"
             />
           </div>
-       
+
           <div>
             <label className="block mb-1 font-medium">Email</label>
             <input
