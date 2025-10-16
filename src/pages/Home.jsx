@@ -10,6 +10,14 @@ function Home() {
   const [loadingTop, setLoadingTop] = useState(false);
   const navigate = useNavigate();
 
+  // Redirect if not logged in
+  useEffect(() => {
+    const token = JSON.parse(localStorage.getItem("token"));
+    if (!token || !token._id) {
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
+
   useEffect(() => {
     const loadTop = async () => {
       try {
@@ -59,6 +67,7 @@ function Home() {
         setLoadingTop(false);
       }
     };
+
     loadTop();
   }, []);
 
@@ -81,13 +90,11 @@ function Home() {
             Start Exploring
           </button>
 
-          {/* Optional floating background image */}
-<img
-  src={Couple}
-  alt="Background couple"
-  className="absolute opacity-15 bottom-0 right-6 md:right-10 w-40 md:w-48 select-none pointer-events-none"
-/>
-
+          <img
+            src={Couple}
+            alt="Background couple"
+            className="absolute opacity-15 bottom-0 right-6 md:right-10 w-40 md:w-48 select-none pointer-events-none"
+          />
         </section>
 
         {/* Top Matches Section */}
@@ -96,51 +103,47 @@ function Home() {
             ❤️ Top Matches
           </h2>
           <div className="grid md:grid-cols-4 gap-6">
-            {loadingTop ? (
-              [1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="bg-white p-4 rounded-xl shadow animate-pulse"
-                >
-                  <div className="w-24 h-24 mx-auto rounded-full bg-gray-200 mb-4" />
-                  <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto mb-2" />
-                  <div className="h-3 bg-gray-200 rounded w-1/3 mx-auto" />
-                </div>
-              ))
-            ) : (
-              (topUsers.length > 0 ? topUsers : []).map((u) => (
-                <div
-                  key={u._id}
-                  className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition text-center"
-                >
-                  <div className="relative w-24 h-24 mx-auto rounded-full bg-gray-200 mb-4 flex items-center justify-center text-gray-500">
-                    <span className="text-xl">
-                      {String(u.name || "?").charAt(0).toUpperCase()}
-                    </span>
-                    <Circle
-                      className={`w-3 h-3 absolute right-1 bottom-1 ${
-                        u.isOnline ? "text-green-500" : "text-gray-400"
-                      }`}
-                    />
+            {loadingTop
+              ? [1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-white p-4 rounded-xl shadow animate-pulse"
+                  >
+                    <div className="w-24 h-24 mx-auto rounded-full bg-gray-200 mb-4" />
+                    <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/3 mx-auto" />
                   </div>
-                  <h3 className="font-semibold text-gray-800">
-                    {u.name || "Unknown"}
-                  </h3>
-                  {u.age && (
-                    <p className="text-gray-500 text-sm">Age: {u.age}</p>
-                  )}
-                  <div className="mt-3 flex justify-center gap-3">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800"
-                      onClick={() => navigate(`/messages/${u._id}`)}
-                    >
-                      <MessageSquare className="w-4 h-4" /> Message
-                    </button>
+                ))
+              : (topUsers.length > 0 ? topUsers : []).map((u) => (
+                  <div
+                    key={u._id}
+                    className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition text-center"
+                  >
+                    <div className="relative w-24 h-24 mx-auto rounded-full bg-gray-200 mb-4 flex items-center justify-center text-gray-500">
+                      <span className="text-xl">
+                        {String(u.name || "?").charAt(0).toUpperCase()}
+                      </span>
+                      <Circle
+                        className={`w-3 h-3 absolute right-1 bottom-1 ${
+                          u.isOnline ? "text-green-500" : "text-gray-400"
+                        }`}
+                      />
+                    </div>
+                    <h3 className="font-semibold text-gray-800">
+                      {u.name || "Unknown"}
+                    </h3>
+                    {u.age && <p className="text-gray-500 text-sm">Age: {u.age}</p>}
+                    <div className="mt-3 flex justify-center gap-3">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800"
+                        onClick={() => navigate(`/messages/${u._id}`)}
+                      >
+                        <MessageSquare className="w-4 h-4" /> Message
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))}
           </div>
         </section>
       </div>
