@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React from "react";
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 
 // Components
 import Header from "./components/Header";
 import Navbar from "./components/Navbar";
 import MobileNavbar from "./components/MobileNavbar";
-import InstallPrompt from "./components/InstallPrompt";
 import PopUpModel from "./components/PopUpModel";
 
 // Pages
@@ -71,10 +69,6 @@ function AppContent() {
           <MobileNavbar />
         </div>
       )}
-
-      <InstallPrompt />
-
- 
     </div>
   );
 }
