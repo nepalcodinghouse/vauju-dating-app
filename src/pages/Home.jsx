@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, Circle, MessageSquare, Users } from "lucide-react";
 import Layout from "../components/Layout";
-import NepaliCouple from "../assets/nepali-couple.png"; // Culturally relevant image
 import NamasteIcon from "../assets/namaste-icon.png"; // Icon for community section
 
 function Home() {
@@ -124,11 +123,6 @@ function Home() {
               Join Events
             </button>
           </div>
-          {/* <img
-            src={NepaliCouple}
-            alt="Nepali couple in traditional attire"
-            className="absolute opacity-70 bottom-0 right-6 md:right-10 w-40 md:w-48 select-none pointer-events-none"
-          /> */}
         </section>
 
         {/* Top Matches Section */}
