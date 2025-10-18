@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Support from "../assets/support.png";
+import Logo from "../assets/logo.png";
 import {
   Home,
   MessageSquare,
@@ -67,7 +68,7 @@ function XSidebar() {
           to="/"
           className="text-2xl font-bold text-black flex items-center justify-center py-6 border-b border-gray-100 w-full"
         >
-          a.m
+          <img src={Logo} alt="" />
         </Link>
 
         <nav className="flex flex-col mt-6 space-y-2">

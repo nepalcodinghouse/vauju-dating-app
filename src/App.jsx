@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 
 // Components
@@ -6,6 +7,7 @@ import Header from "./components/Header";
 import Navbar from "./components/Navbar";
 import MobileNavbar from "./components/MobileNavbar";
 import InstallPrompt from "./components/InstallPrompt";
+import PopUpModel from "./components/PopUpModel";
 
 // Pages
 import Home from "./pages/Home";
@@ -24,39 +26,48 @@ import PageNotFound from "./pages/PageNotFound";
 
 import "./App.css";
 
-// Main App Content with conditional layout
 function AppContent() {
   const location = useLocation();
+  const [popupData, setPopupData] = useState(null);
+  const [loadingPopup, setLoadingPopup] = useState(true);
 
-  // Pages where header/navbar should be hidden
-  const hideLayout = [
-    "/login",
-    "/register",
-    "/messages",
-    "/admin/login"
-  ].includes(location.pathname) || location.pathname.startsWith("/messages/");
+  const hideLayout =
+    ["/login", "/register", "/messages", "/admin/login"].includes(location.pathname) ||
+    location.pathname.startsWith("/messages/");
+
+  useEffect(() => {
+    const fetchPopup = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/popup");
+        if (res.data.showPopup) {
+          setPopupData(res.data);
+        }
+      } catch (err) {
+        console.error("Popup fetch failed:", err);
+      } finally {
+        setLoadingPopup(false);
+      }
+    };
+    fetchPopup();
+  }, []);
+
+  const closePopup = () => setPopupData(null);
 
   return (
-    <div className="App flex flex-col min-h-screen relative">
-      {/* Header & Navbar */}
+    <div className="App flex flex-col min-h-screen relative text-black bg-white">
       {!hideLayout && (
         <>
-          {/* Mobile Header */}
           <div className="block md:hidden">
             <Header />
           </div>
-
-          {/* Desktop Navbar */}
           <div className="hidden md:block">
             <Navbar />
           </div>
         </>
       )}
 
-      {/* Main content */}
       <main className="flex-1">
         <Routes>
-          {/* User routes */}
           <Route path="/" element={<Home />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
@@ -66,35 +77,51 @@ function AppContent() {
           <Route path="/messages/:userId" element={<Messages />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/support" element={<Support />} />
-
-          {/* Dynamic username route */}
           <Route path="/@:username" element={<Profile />} />
-
-          {/* Admin routes */}
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/suspend" element={<SuspendUsers />} />
           <Route path="/admin/manage-users" element={<ManageUser />} />
-
-          {/* 404 fallback */}
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </main>
 
-      {/* Mobile Navbar */}
       {!hideLayout && (
         <div className="md:hidden">
           <MobileNavbar />
         </div>
       )}
 
-      {/* PWA Install Button (always at bottom) */}
       <InstallPrompt />
+
+      {/* Popup fetched from server */}
+      {!loadingPopup && popupData && (
+        <PopUpModel
+          isOpen={true}
+          onClose={closePopup}
+          title={popupData.title}
+        >
+          <p className="mb-4 text-gray-700">{popupData.message}</p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={closePopup}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+            >
+              Close
+            </button>
+            <button
+              onClick={closePopup}
+              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
+            >
+              Continue
+            </button>
+          </div>
+        </PopUpModel>
+      )}
     </div>
   );
 }
 
-// Main App wrapper with Router
 export default function App() {
   return (
     <Router>

@@ -21,23 +21,35 @@ function AdminLogin() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
+      const res = await fetch(
+        "http://backend-vauju-1.onrender.com/admin/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        }
+      );
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        console.error("Failed to parse JSON:", jsonErr);
+        toast.error("Invalid server response");
+        return;
+      }
+
+      console.log("Server response:", data);
 
       if (res.ok && data.token) {
         localStorage.setItem("adminToken", data.token);
         toast.success("Login successful 🎉");
-        navigate("/admin");
+        setTimeout(() => navigate("/admin"), 1000); // small delay for toast
       } else {
-        toast.error(data.message || "Invalid credentials ❌");
+        toast.error(data.message || `Login failed ❌ (status ${res.status})`);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Login error:", err);
       toast.error("Server error. Try again later.");
     } finally {
       setLoading(false);
@@ -75,6 +87,9 @@ function AdminLogin() {
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
+      <p className="mt-4 text-sm text-gray-500 text-center">
+        Demo: username: <b>admin</b>, password: <b>admin123</b>
+      </p>
     </div>
   );
 }
