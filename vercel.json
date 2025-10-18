@@ -1,11 +1,8 @@
 {
-    "routes": [
+    "rewrites": [
       {
-        "handle": "filesystem"
-      },
-      {
-        "src": "/(.*)",
-        "dest": "/index.html"
+        "source": "/:path((?!.*\\.(css|js|json|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp)).*)",
+        "destination": "/index.html"
       }
     ]
 }
