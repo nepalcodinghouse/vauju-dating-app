@@ -2,7 +2,7 @@ import React from "react";
 
 function Home() {
   return (
-    <section className="flex flex-col justify-center items-center h-screen bg-gradient-to-b from-pink-100 to-purple-200 text-center px-4">
+    <section className="flex flex-col justify-center items-center h-screen  text-center px-4">
       {/* Headline */}
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
         Welcome to AuraMeet

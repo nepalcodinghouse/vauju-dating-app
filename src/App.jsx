@@ -19,7 +19,9 @@ import AdminLogin from "./Admin/Auth/Login";
 import SuspendUsers from "./Admin/SuspendUsers";
 import ManageUser from "./Admin/ManageUsers";
 import Support from "./pages/Support";
+import HallOfFame from "./pages/HallOfFame";
 import PageNotFound from "./pages/PageNotFound";
+import Bug from "./Halloffame/Mandip/Bug";
 
 import "./App.css";
 
@@ -59,6 +61,8 @@ function App() {
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/suspend" element={<SuspendUsers />} />
           <Route path="/admin/manage-users" element={<ManageUser />} />
+          <Route path="/hall-of-fame" element={<HallOfFame />} />
+          <Route path="/community/hall-of-fame/bug" element={<Bug />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </main>
