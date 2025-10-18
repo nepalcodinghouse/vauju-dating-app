@@ -2,6 +2,7 @@
   "name": "vauju",
   "private": true,
   "version": "0.0.0",
+  "proxy": "https://backend-vauju-1.onrender.com",
   "type": "module",
   "scripts": {
     "dev": "vite",
