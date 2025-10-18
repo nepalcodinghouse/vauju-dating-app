@@ -24,7 +24,7 @@ import PageNotFound from "./pages/PageNotFound";
 
 import "./App.css";
 
-function AppContent() {
+function App() {
   const location = useLocation();
 
   const hideLayout =
@@ -73,4 +73,4 @@ function AppContent() {
   );
 }
 
-export default AppContent;
+export default App;
