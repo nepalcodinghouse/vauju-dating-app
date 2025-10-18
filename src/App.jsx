@@ -28,30 +28,11 @@ import "./App.css";
 
 function AppContent() {
   const location = useLocation();
-  const [popupData, setPopupData] = useState(null);
-  const [loadingPopup, setLoadingPopup] = useState(true);
 
   const hideLayout =
     ["/login", "/register", "/messages", "/admin/login"].includes(location.pathname) ||
     location.pathname.startsWith("/messages/");
 
-  useEffect(() => {
-    const fetchPopup = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/popup");
-        if (res.data.showPopup) {
-          setPopupData(res.data);
-        }
-      } catch (err) {
-        console.error("Popup fetch failed:", err);
-      } finally {
-        setLoadingPopup(false);
-      }
-    };
-    fetchPopup();
-  }, []);
-
-  const closePopup = () => setPopupData(null);
 
   return (
     <div className="App flex flex-col min-h-screen relative text-black bg-white">
@@ -94,30 +75,7 @@ function AppContent() {
 
       <InstallPrompt />
 
-      {/* Popup fetched from server */}
-      {!loadingPopup && popupData && (
-        <PopUpModel
-          isOpen={true}
-          onClose={closePopup}
-          title={popupData.title}
-        >
-          <p className="mb-4 text-gray-700">{popupData.message}</p>
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={closePopup}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-            >
-              Close
-            </button>
-            <button
-              onClick={closePopup}
-              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
-            >
-              Continue
-            </button>
-          </div>
-        </PopUpModel>
-      )}
+ 
     </div>
   );
 }
