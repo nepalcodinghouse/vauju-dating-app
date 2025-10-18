@@ -33,7 +33,6 @@ function AppContent() {
     ["/login", "/register", "/messages", "/admin/login"].includes(location.pathname) ||
     location.pathname.startsWith("/messages/");
 
-
   return (
     <div className="App flex flex-col min-h-screen relative text-black bg-white">
       {!hideLayout && (
