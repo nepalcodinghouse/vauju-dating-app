@@ -1,8 +1,12 @@
 // src/components/XSidebar.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import Support from "../assets/support.png";
+
+// Assets
+import SupportIcon from "../assets/support.png";
 import Logo from "../assets/logo.png";
+
+// Icons
 import {
   Home,
   MessageSquare,
@@ -32,6 +36,7 @@ function XSidebar() {
 
     window.addEventListener("storage", onStorage);
     window.addEventListener("authChange", onAuthChange);
+
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("authChange", onAuthChange);
@@ -52,7 +57,7 @@ function XSidebar() {
     { path: "/", icon: <Home size={22} /> },
     { path: "/matches", icon: <Users size={22} /> },
     { path: "/messages", icon: <MessageSquare size={22} /> },
-    { path: "/support", icon: <img src={Support} alt="Support" className="w-6 h-6" /> },
+    { path: "/support", icon: <img src={SupportIcon} alt="Support" className="w-6 h-6" /> },
   ];
 
   const isActive = (path) => {
@@ -68,7 +73,7 @@ function XSidebar() {
           to="/"
           className="text-2xl font-bold text-black flex items-center justify-center py-6 border-b border-gray-100 w-full"
         >
-          <img src={Logo} alt="" />
+          <img src={Logo} alt="Logo" className="w-10 h-10" />
         </Link>
 
         <nav className="flex flex-col mt-6 space-y-2">
