@@ -5,7 +5,6 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import Header from "./components/Header";
 import Navbar from "./components/Navbar";
 import MobileNavbar from "./components/MobileNavbar";
-import PopUpModel from "./components/PopUpModel";
 
 // Pages
 import Home from "./pages/Home";
