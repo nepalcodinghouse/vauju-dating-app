@@ -13,7 +13,7 @@ import Register from "./AUTH/Register";
 import Login from "./AUTH/Login";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
-import Messages from "./Message/Messages";
+import Messages from "./pages/Messages";
 import Matches from "./pages/Matches";
 import Admin from "./Admin/Admin";
 import AdminLogin from "./Admin/Auth/Login";
